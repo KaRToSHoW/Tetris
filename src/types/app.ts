@@ -14,6 +14,7 @@ export interface GameSettings {
   showGhost: boolean;
   soundEnabled: boolean;
   musicEnabled: boolean;
+  controlMode: 'buttons' | 'swipes';
 }
 
 export interface HighScore {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Switch } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Switch, ScrollView } from 'react-native';
 import Icon, { ICON_COLORS } from './Icon';
 import type { GameSettings, Screen } from '../types/app';
 
@@ -26,7 +26,7 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
         <Text style={styles.title}>Настройки</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Difficulty Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Сложность</Text>
@@ -86,6 +86,26 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
           </View>
         </View>
 
+        {/* Controls Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Управление</Text>
+          
+          <View style={styles.toggleOption}>
+            <View style={styles.toggleContent}>
+              <Text style={styles.toggleLabel}>Режим управления</Text>
+              <Text style={styles.toggleDescription}>
+                {settings.controlMode === 'buttons' ? 'Кнопки' : 'Свайпы и касания'}
+              </Text>
+            </View>
+            <Switch
+              value={settings.controlMode === 'swipes'}
+              onValueChange={(value: boolean) => onUpdateSettings({ controlMode: value ? 'swipes' : 'buttons' })}
+              trackColor={{ false: '#333', true: '#00ffff50' }}
+              thumbColor={settings.controlMode === 'swipes' ? '#00ffff' : '#666'}
+            />
+          </View>
+        </View>
+
         {/* Audio Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Звук</Text>
@@ -116,7 +136,7 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
             />
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

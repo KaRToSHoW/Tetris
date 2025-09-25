@@ -7,6 +7,7 @@ export function createInitialAppState(): AppState {
     showGhost: true,
     soundEnabled: true,
     musicEnabled: true,
+    controlMode: 'buttons',
   };
 
   return {
@@ -36,7 +37,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'ADD_HIGH_SCORE': {
       const newRecords = [...state.records, action.score]
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Keep only top 10 scores
+        .slice(0, 5); // Keep only top 5 scores
       
       return {
         ...state,

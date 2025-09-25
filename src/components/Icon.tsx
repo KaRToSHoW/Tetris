@@ -17,9 +17,9 @@ const ICONS = {
   restart: '↻',
   
   // Menu items
-  gamepad: '🎮',
-  trophy: '🏆',
-  users: '👥',
+  gamepad: '▲', // Triangle for play/game
+  trophy: '★', // Filled star for trophy
+  users: '⌂', // House/group symbol
   exit: '⬅',
   
   // Navigation

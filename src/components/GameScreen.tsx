@@ -3,6 +3,7 @@ import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { BOARD_COLS, BOARD_ROWS, TETROMINOES } from '../game/constants';
 import { createInitialState, getTickMs, reducer } from '../game/reducer';
 import Icon, { ICON_COLORS } from './Icon';
+import TouchGameBoard from './TouchGameBoard';
 import type { GameSettings, Screen } from '../types/app';
 
 interface GameScreenProps {
@@ -14,6 +15,7 @@ interface GameScreenProps {
 export default function GameScreen({ settings, onNavigate, onGameOver }: GameScreenProps) {
   const [state, dispatch] = useReducer(reducer, undefined, createInitialState);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gameOverHandled = useRef<boolean>(false);
 
   const speed = useMemo(() => {
     const baseSpeed = getTickMs(state.level);
@@ -39,8 +41,13 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
   }, [speed, state.isPaused, state.isGameOver]);
 
   useEffect(() => {
-    if (state.isGameOver) {
+    if (state.isGameOver && !gameOverHandled.current) {
+      gameOverHandled.current = true;
       onGameOver(state.score, state.linesCleared, state.level);
+    }
+    // Reset the flag when game is restarted
+    if (!state.isGameOver && gameOverHandled.current) {
+      gameOverHandled.current = false;
     }
   }, [state.isGameOver, state.score, state.linesCleared, state.level, onGameOver]);
 
@@ -124,46 +131,111 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
         </View>
 
         {/* Game Board */}
-        <View style={styles.board}>
-          {grid.map((row, rIdx) => (
-            <View key={rIdx} style={styles.row}>
-              {row.map((cell, cIdx) => (
-                <View 
-                  key={cIdx} 
-                  style={[
-                    styles.cell, 
-                    settings.showGrid && styles.cellWithGrid,
-                    styles[`cell${cell}` as const] as any
-                  ]} 
-                />
-              ))}
-            </View>
-          ))}
+        {settings.controlMode === 'swipes' ? (
+          <TouchGameBoard
+            style={styles.board}
+            onMove={(dir) => dispatch({ type: 'MOVE', dir })}
+            onRotate={() => dispatch({ type: 'ROTATE', dir: 1 })}
+            onHardDrop={() => dispatch({ type: 'HARD_DROP' })}
+          >
+            {grid.map((row, rIdx) => (
+              <View key={rIdx} style={styles.row}>
+                {row.map((cell, cIdx) => (
+                  <View 
+                    key={cIdx} 
+                    style={[
+                      styles.cell, 
+                      settings.showGrid && styles.cellWithGrid,
+                      styles[`cell${cell}` as const] as any
+                    ]} 
+                  />
+                ))}
+              </View>
+            ))}
+          </TouchGameBoard>
+        ) : (
+          <View style={styles.board}>
+            {grid.map((row, rIdx) => (
+              <View key={rIdx} style={styles.row}>
+                {row.map((cell, cIdx) => (
+                  <View 
+                    key={cIdx} 
+                    style={[
+                      styles.cell, 
+                      settings.showGrid && styles.cellWithGrid,
+                      styles[`cell${cell}` as const] as any
+                    ]} 
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Game Controls - Only show in button mode */}
+      {settings.controlMode === 'buttons' && (
+        <View style={styles.controls}>
+        {/* Top Row - Movement */}
+        <View style={styles.controlRow}>
+          <Pressable 
+            style={[styles.btn, styles.moveBtn]} 
+            onPress={() => dispatch({ type: 'MOVE', dir: 'left' })}
+          >
+            <Icon name="left" size={24} color={ICON_COLORS.secondary} />
+            <Text style={styles.btnLabel}>Лево</Text>
+          </Pressable>
+          
+          <Pressable 
+            style={[styles.btn, styles.moveBtn]} 
+            onPress={() => dispatch({ type: 'MOVE', dir: 'right' })}
+          >
+            <Icon name="right" size={24} color={ICON_COLORS.secondary} />
+            <Text style={styles.btnLabel}>Право</Text>
+          </Pressable>
+        </View>
+        
+        {/* Middle Row - Actions */}
+        <View style={styles.controlRow}>
+          <Pressable 
+            style={[styles.btn, styles.rotateBtn]} 
+            onPress={() => dispatch({ type: 'ROTATE', dir: 1 })}
+          >
+            <Icon name="rotate" size={24} color={ICON_COLORS.secondary} />
+            <Text style={styles.btnLabel}>Поворот</Text>
+          </Pressable>
+          
+          <Pressable 
+            style={[styles.btn, styles.downBtn]} 
+            onPress={() => dispatch({ type: 'MOVE', dir: 'down' })}
+          >
+            <Icon name="down" size={24} color={ICON_COLORS.secondary} />
+            <Text style={styles.btnLabel}>Вниз</Text>
+          </Pressable>
+        </View>
+        
+        {/* Bottom Row - Drop */}
+        <View style={styles.controlRow}>
+          <Pressable 
+            style={[styles.btn, styles.dropBtn]} 
+            onPress={() => dispatch({ type: 'HARD_DROP' })}
+          >
+            <Icon name="drop" size={28} color={ICON_COLORS.secondary} />
+            <Text style={styles.btnLabel}>Сброс</Text>
+          </Pressable>
         </View>
       </View>
 
-      {/* Game Controls */}
-      <View style={styles.controls}>
-        <View style={styles.controlRow}>
-          <Pressable style={styles.btn} onPress={() => dispatch({ type: 'MOVE', dir: 'left' })}>
-            <Icon name="left" size={20} color={ICON_COLORS.secondary} />
-          </Pressable>
-          <Pressable style={styles.btn} onPress={() => dispatch({ type: 'ROTATE', dir: 1 })}>
-            <Icon name="rotate" size={20} color={ICON_COLORS.secondary} />
-          </Pressable>
-          <Pressable style={styles.btn} onPress={() => dispatch({ type: 'MOVE', dir: 'right' })}>
-            <Icon name="right" size={20} color={ICON_COLORS.secondary} />
-          </Pressable>
+      {/* Instructions for swipe mode */}
+      {settings.controlMode === 'swipes' && (
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsTitle}>Управление:</Text>
+          <Text style={styles.instructionsText}>• Свайп влево/вправо: движение</Text>
+          <Text style={styles.instructionsText}>• Свайп вниз: ускорение</Text>
+          <Text style={styles.instructionsText}>• Касание: поворот</Text>
+          <Text style={styles.instructionsText}>• Двойное касание: сброс</Text>
         </View>
-        <View style={styles.controlRow}>
-          <Pressable style={[styles.btn, styles.downBtn]} onPress={() => dispatch({ type: 'MOVE', dir: 'down' })}>
-            <Icon name="down" size={20} color={ICON_COLORS.secondary} />
-          </Pressable>
-          <Pressable style={[styles.btn, styles.dropBtn]} onPress={() => dispatch({ type: 'HARD_DROP' })}>
-            <Icon name="drop" size={20} color={ICON_COLORS.secondary} />
-          </Pressable>
-        </View>
-      </View>
+      )}
 
       {/* Bottom Toolbar */}
       <View style={styles.bottomToolbar}>
@@ -377,37 +449,77 @@ const styles = StyleSheet.create({
   cell7: { backgroundColor: '#ff8c00' },
   controls: { 
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     marginBottom: 20,
   },
   controlRow: {
     flexDirection: 'row', 
-    columnGap: 15, 
-    marginBottom: 15,
+    columnGap: 12, 
+    marginBottom: 12,
     justifyContent: 'center',
   },
   btn: { 
     backgroundColor: '#1a1a1a', 
-    paddingHorizontal: 20, 
-    paddingVertical: 15, 
+    paddingHorizontal: 16, 
+    paddingVertical: 12, 
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#333',
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  moveBtn: {
+    backgroundColor: '#2a4d3a',
+    borderColor: '#00ff6a',
+  },
+  rotateBtn: {
+    backgroundColor: '#4d2a4d',
+    borderColor: '#aa00ff',
+  },
+  downBtn: {
+    backgroundColor: '#2a4d4d',
+    borderColor: '#00ffff',
+  },
+  dropBtn: {
+    backgroundColor: '#4d3a2a',
+    borderColor: '#ff8c00',
+    minWidth: 120,
+    paddingVertical: 16,
+  },
+  btnLabel: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  instructionsContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 20,
+    marginBottom: 15,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#333',
-    minWidth: 60,
-    alignItems: 'center',
   },
-  downBtn: {
-    backgroundColor: '#0066cc',
-    borderColor: '#0088ff',
-  },
-  dropBtn: {
-    backgroundColor: '#cc6600',
-    borderColor: '#ff8800',
-  },
-  btnText: { 
-    color: 'white', 
-    fontSize: 20,
+  instructionsTitle: {
+    color: '#00ffff',
+    fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  instructionsText: {
+    color: '#ffffff',
+    fontSize: 14,
+    marginBottom: 5,
+    lineHeight: 20,
   },
   bottomToolbar: { 
     flexDirection: 'row', 
