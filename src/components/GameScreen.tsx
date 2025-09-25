@@ -173,61 +173,59 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
         )}
       </View>
 
-      {/* Game Controls - Only show in button mode */}
-      {settings.controlMode === 'buttons' && (
+      {/* Game Controls or Instructions */}
+      {settings.controlMode === 'buttons' ? (
         <View style={styles.controls}>
-        {/* Top Row - Movement */}
-        <View style={styles.controlRow}>
-          <Pressable 
-            style={[styles.btn, styles.moveBtn]} 
-            onPress={() => dispatch({ type: 'MOVE', dir: 'left' })}
-          >
-            <Icon name="left" size={24} color={ICON_COLORS.secondary} />
-            <Text style={styles.btnLabel}>Лево</Text>
-          </Pressable>
+          {/* Top Row - Movement */}
+          <View style={styles.controlRow}>
+            <Pressable 
+              style={[styles.btn, styles.moveBtn]} 
+              onPress={() => dispatch({ type: 'MOVE', dir: 'left' })}
+            >
+              <Icon name="left" size={24} color={ICON_COLORS.secondary} />
+              <Text style={styles.btnLabel}>Лево</Text>
+            </Pressable>
+            
+            <Pressable 
+              style={[styles.btn, styles.moveBtn]} 
+              onPress={() => dispatch({ type: 'MOVE', dir: 'right' })}
+            >
+              <Icon name="right" size={24} color={ICON_COLORS.secondary} />
+              <Text style={styles.btnLabel}>Право</Text>
+            </Pressable>
+          </View>
           
-          <Pressable 
-            style={[styles.btn, styles.moveBtn]} 
-            onPress={() => dispatch({ type: 'MOVE', dir: 'right' })}
-          >
-            <Icon name="right" size={24} color={ICON_COLORS.secondary} />
-            <Text style={styles.btnLabel}>Право</Text>
-          </Pressable>
-        </View>
-        
-        {/* Middle Row - Actions */}
-        <View style={styles.controlRow}>
-          <Pressable 
-            style={[styles.btn, styles.rotateBtn]} 
-            onPress={() => dispatch({ type: 'ROTATE', dir: 1 })}
-          >
-            <Icon name="rotate" size={24} color={ICON_COLORS.secondary} />
-            <Text style={styles.btnLabel}>Поворот</Text>
-          </Pressable>
+          {/* Middle Row - Actions */}
+          <View style={styles.controlRow}>
+            <Pressable 
+              style={[styles.btn, styles.rotateBtn]} 
+              onPress={() => dispatch({ type: 'ROTATE', dir: 1 })}
+            >
+              <Icon name="rotate" size={24} color={ICON_COLORS.secondary} />
+              <Text style={styles.btnLabel}>Поворот</Text>
+            </Pressable>
+            
+            <Pressable 
+              style={[styles.btn, styles.downBtn]} 
+              onPress={() => dispatch({ type: 'MOVE', dir: 'down' })}
+            >
+              <Icon name="down" size={24} color={ICON_COLORS.secondary} />
+              <Text style={styles.btnLabel}>Вниз</Text>
+            </Pressable>
+          </View>
           
-          <Pressable 
-            style={[styles.btn, styles.downBtn]} 
-            onPress={() => dispatch({ type: 'MOVE', dir: 'down' })}
-          >
-            <Icon name="down" size={24} color={ICON_COLORS.secondary} />
-            <Text style={styles.btnLabel}>Вниз</Text>
-          </Pressable>
+          {/* Bottom Row - Drop */}
+          <View style={styles.controlRow}>
+            <Pressable 
+              style={[styles.btn, styles.dropBtn]} 
+              onPress={() => dispatch({ type: 'HARD_DROP' })}
+            >
+              <Icon name="drop" size={28} color={ICON_COLORS.secondary} />
+              <Text style={styles.btnLabel}>Сброс</Text>
+            </Pressable>
+          </View>
         </View>
-        
-        {/* Bottom Row - Drop */}
-        <View style={styles.controlRow}>
-          <Pressable 
-            style={[styles.btn, styles.dropBtn]} 
-            onPress={() => dispatch({ type: 'HARD_DROP' })}
-          >
-            <Icon name="drop" size={28} color={ICON_COLORS.secondary} />
-            <Text style={styles.btnLabel}>Сброс</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Instructions for swipe mode */}
-      {settings.controlMode === 'swipes' && (
+      ) : (
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructionsTitle}>Управление:</Text>
           <Text style={styles.instructionsText}>• Свайп влево/вправо: движение</Text>
