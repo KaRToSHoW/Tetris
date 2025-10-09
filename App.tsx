@@ -1,3 +1,6 @@
+// Polyfills for React Native
+import 'text-encoding';
+
 import { StatusBar } from 'expo-status-bar';
 import React, { useReducer } from 'react';
 import { StyleSheet } from 'react-native';
