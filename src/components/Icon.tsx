@@ -49,6 +49,7 @@ const ICONS = {
   star: '★',
   heart: '♥',
   diamond: '♦',
+  code: '</>', // Code symbol for demo
 } as const;
 
 const ICON_COLORS = {

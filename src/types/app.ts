@@ -1,6 +1,6 @@
 // Application-wide types and enums
 
-export type Screen = 'menu' | 'game' | 'settings' | 'records' | 'multiplayer';
+export type Screen = 'menu' | 'game' | 'settings' | 'records' | 'multiplayer' | 'stats';
 
 export interface AppState {
   currentScreen: Screen;

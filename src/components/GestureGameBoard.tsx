@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { View, PanGestureHandler, TapGestureHandler, State } from 'react-native-gesture-handler';
-import { StyleSheet } from 'react-native';
+import { PanGestureHandler, TapGestureHandler, State } from 'react-native-gesture-handler';
+import { View, StyleSheet } from 'react-native';
 
 interface GestureGameBoardProps {
   children: React.ReactNode;

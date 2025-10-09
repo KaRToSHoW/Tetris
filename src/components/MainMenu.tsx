@@ -14,6 +14,7 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
     { key: 'game', label: 'Играть', icon: 'gamepad', disabled: false },
     { key: 'settings', label: 'Настройки', icon: 'gear', disabled: false },
     { key: 'records', label: 'Рекорды', icon: 'trophy', disabled: false },
+    { key: 'stats', label: 'Статистика', icon: 'chart', disabled: false, subtitle: '(Персональная и глобальная)' },
     { key: 'multiplayer', label: 'Мультиплеер', icon: 'users', disabled: true, subtitle: '(в доработке)' },
     { key: 'exit', label: 'Выход', icon: 'exit', disabled: false },
   ];

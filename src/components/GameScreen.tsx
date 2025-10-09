@@ -121,7 +121,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
                     key={cIdx} 
                     style={[
                       styles.nextPieceCell, 
-                      cell > 0 && styles[`cell${cell}` as const] as any
+                      cell > 0 && (styles as any)[`cell${cell}`]
                     ]} 
                   />
                 ))}
@@ -146,7 +146,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
                     style={[
                       styles.cell, 
                       settings.showGrid && styles.cellWithGrid,
-                      styles[`cell${cell}` as const] as any
+                      (styles as any)[`cell${cell}`]
                     ]} 
                   />
                 ))}
@@ -163,7 +163,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
                     style={[
                       styles.cell, 
                       settings.showGrid && styles.cellWithGrid,
-                      styles[`cell${cell}` as const] as any
+                      (styles as any)[`cell${cell}`]
                     ]} 
                   />
                 ))}
