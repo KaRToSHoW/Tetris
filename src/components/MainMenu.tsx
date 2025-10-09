@@ -1,23 +1,47 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import Icon, { ICON_COLORS } from './Icon';
+import { useAuth } from '../contexts/AuthContext';
 import type { Screen } from '../types/app';
 
 interface MainMenuProps {
   onNavigate: (screen: Screen) => void;
 }
 
+interface MenuItem {
+  key: string;
+  label: string;
+  icon: string;
+  disabled: boolean;
+  subtitle?: string;
+}
+
 const { width, height } = Dimensions.get('window');
 
 export default function MainMenu({ onNavigate }: MainMenuProps) {
-  const menuItems = [
-    { key: 'game', label: 'Играть', icon: 'gamepad', disabled: false },
-    { key: 'settings', label: 'Настройки', icon: 'gear', disabled: false },
-    { key: 'records', label: 'Рекорды', icon: 'trophy', disabled: false },
-    { key: 'stats', label: 'Статистика', icon: 'chart', disabled: false, subtitle: '(Персональная и глобальная)' },
-    { key: 'multiplayer', label: 'Мультиплеер', icon: 'users', disabled: true, subtitle: '(в доработке)' },
-    { key: 'exit', label: 'Выход', icon: 'exit', disabled: false },
-  ];
+  const { user, session } = useAuth();
+
+  // Dynamic menu items based on authentication status
+  const getMenuItems = (): MenuItem[] => {
+    const baseItems = [
+      { key: 'game', label: 'Играть', icon: 'gamepad', disabled: false },
+      { key: 'records', label: 'Рекорды', icon: 'trophy', disabled: false },
+      { key: 'settings', label: 'Настройки', icon: 'gear', disabled: false },
+    ];
+
+    const authItem = session?.user 
+      ? { key: 'profile', label: 'Профиль', icon: 'user', disabled: false }
+      : { key: 'login', label: 'Вход / Регистрация', icon: 'login', disabled: false };
+
+    const endItems = [
+      { key: 'multiplayer', label: 'Мультиплеер', icon: 'users', disabled: true, subtitle: '(в доработке)' },
+      { key: 'exit', label: 'Выход', icon: 'exit', disabled: false },
+    ];
+
+    return [...baseItems, authItem, ...endItems];
+  };
+
+  const menuItems = getMenuItems();
 
   const handlePress = (key: string) => {
     if (key === 'exit') {
@@ -33,6 +57,11 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
       <View style={styles.header}>
         <Text style={styles.title}>ТЕТРИС</Text>
         <Text style={styles.subtitle}>Классическая игра</Text>
+        {session?.user && (
+          <Text style={styles.userWelcome}>
+            Добро пожаловать, {user?.display_name || user?.username || session.user.email}!
+          </Text>
+        )}
       </View>
       
       <View style={styles.menu}>
@@ -105,6 +134,12 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
   },
+  userWelcome: {
+    fontSize: 16,
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: 10,
+  },
   menu: {
     maxWidth: 400,
     alignSelf: 'center',
@@ -155,7 +190,6 @@ const styles = StyleSheet.create({
     top: '50%',
     transform: [{ translateY: -10 }],
   },
-
   footer: {
     position: 'absolute',
     bottom: 40,

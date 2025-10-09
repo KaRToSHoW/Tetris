@@ -49,7 +49,10 @@ const ICONS = {
   star: '★',
   heart: '♥',
   diamond: '♦',
-  code: '</>', // Code symbol for demo
+  
+  // Auth
+  user: '👤',
+  login: '🔑',
 } as const;
 
 const ICON_COLORS = {
