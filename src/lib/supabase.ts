@@ -291,20 +291,26 @@ export const refreshSession = async () => {
 export const apiCall = async <T>(apiFunction: () => Promise<{ data: T | null; error: any }>, maxRetries: number = 2): Promise<{ data: T | null; error: any }> => {
   let lastError: any;
   
-  // Check if tab is visible before making API calls
+  // Check if tab is visible before making API calls (only in environments with document)
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
     console.log('Tab is hidden, deferring API call...');
     await new Promise(resolve => {
       const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          if (typeof document !== 'undefined' && document.removeEventListener) {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+          }
           resolve(void 0);
         }
       };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+      if (typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+      }
       // Fallback timeout
       setTimeout(() => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        if (typeof document !== 'undefined' && document.removeEventListener) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        }
         resolve(void 0);
       }, 10000);
     });

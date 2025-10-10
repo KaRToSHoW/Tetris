@@ -1,9 +1,9 @@
-// Polyfills for React Native
-import 'text-encoding';
+// Platform-specific polyfills (native loads text-encoding, web uses a no-op)
+import './src/polyfills';
 
 import { StatusBar } from 'expo-status-bar';
-import React, { useReducer, useEffect, useState, useCallback, useMemo } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import React, { useReducer } from 'react';
+import { StyleSheet } from 'react-native';
 import { appReducer, createInitialAppState } from './src/reducers/appReducer';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { saveGameRecord, updatePlayerStats } from './src/lib/supabase';
@@ -22,7 +22,7 @@ function AppContent() {
 
   const handleNavigate = (screen: Screen) => {
     appDispatch({ type: 'NAVIGATE_TO', screen });
-  }, []);
+  };
 
   const handleGameOver = async (score: number, lines: number, level: number) => {
     const newHighScore: HighScore = {
@@ -72,15 +72,13 @@ function AppContent() {
 
   const handleUpdateSettings = (settings: any) => {
     appDispatch({ type: 'UPDATE_SETTINGS', settings });
-  }, []);
+  };
 
-  // Обработчик изменения имени игрока
-  const handlePlayerNameChange = useCallback((newName: string) => {
-    setPlayerName(newName);
-  }, []);
+  const handleResetRecords = () => {
+    appDispatch({ type: 'RESET_RECORDS' });
+  };
 
-  // Мемоизированный рендер текущего экрана для оптимизации производительности
-  const renderCurrentScreen = useMemo(() => {
+  const renderCurrentScreen = () => {
     switch (appState.currentScreen) {
       case 'menu':
         return <MainMenu onNavigate={handleNavigate} />;
@@ -96,17 +94,17 @@ function AppContent() {
       
       case 'settings':
         return (
-          <PlayerSettings 
-            playerName={playerName}
-            onPlayerNameChange={handlePlayerNameChange}
-            onClose={() => handleNavigate('menu')}
+          <SettingsScreen 
+            settings={appState.gameSettings}
+            onUpdateSettings={handleUpdateSettings}
+            onNavigate={handleNavigate}
           />
         );
       
       case 'records':
         return (
           <RecordsScreen 
-            records={(records || []).map(gameRecordToHighScore)}
+            records={appState.records}
             onNavigate={handleNavigate}
             onResetRecords={handleResetRecords}
           />
@@ -143,27 +141,12 @@ function AppContent() {
       default:
         return <MainMenu onNavigate={handleNavigate} />;
     }
-  }, [appState.currentScreen, appState.gameSettings, records, playerName, handleNavigate, handleGameOver, handlePlayerNameChange]);
-  
-  // Показываем экран загрузки пока инициализируется приложение
-  if (isAppLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Загрузка...</Text>
-        {(recordsError || statsError) && (
-          <Text style={styles.errorText}>
-            {recordsError || statsError}
-          </Text>
-        )}
-      </View>
-    );
-  }
+  };
 
   return (
     <>
       <StatusBar style="light" />
-      {renderCurrentScreen}
+      {renderCurrentScreen()}
     </>
   );
 }

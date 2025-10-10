@@ -8,12 +8,21 @@ config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 
 // Exclude Node.js specific modules that shouldn't be bundled
 config.resolver.blockList = [
+  // WebSocket libraries that don't work in React Native
   /node_modules\/.*\/node_modules\/ws\/.*/,
+  /node_modules\/ws\/.*/,
   /node_modules\/.*\/node_modules\/bufferutil\/.*/,
+  /node_modules\/bufferutil\/.*/,
   /node_modules\/.*\/node_modules\/utf-8-validate\/.*/,
+  /node_modules\/utf-8-validate\/.*/,
+  
+  // Other problematic Node.js modules
+  /node_modules\/.*\/node_modules\/node-fetch\/.*/,
+  /node_modules\/.*\/node_modules\/fs\/.*/,
+  /node_modules\/.*\/node_modules\/path\/.*/,
 ];
 
-// Transform configuration
+// Transform configuration optimized for performance
 config.transformer.getTransformOptions = async () => ({
   transform: {
     experimentalImportSupport: false,
@@ -21,14 +30,41 @@ config.transformer.getTransformOptions = async () => ({
   },
 });
 
-// Configure for web platform
+// Additional performance optimizations
+config.transformer.minifierConfig = {
+  mangle: false, // Disable mangling for better debugging
+};
+
+// Cache configuration for faster rebuilds
+// config.cacheStores = [
+//   {
+//     name: 'filesystem', 
+//     directory: '/tmp/metro-cache',
+//   },
+// ];
+
+// Configure polyfills for React Native
 config.resolver.alias = {
-  'crypto': 'react-native-url-polyfill/js/urlsearchparams-polyfill.js',
-  'stream': 'stream-browserify',
-  'http': '@expo/webpack-config/web-default/react-native-web.js',
-  'https': '@expo/webpack-config/web-default/react-native-web.js',
-  'os': 'react-native-url-polyfill/js/urlsearchparams-polyfill.js',
+  // Node.js polyfills
+  'crypto': false, // Disable crypto entirely as it's not available in RN
+  'stream': false,
+  'http': false,
+  'https': false, 
+  'fs': false,
+  'path': false,
+  'os': false,
+  'net': false,
+  'tls': false,
+  'child_process': false,
+  'dns': false,
+  
+  // URL polyfill for React Native
   'url': 'react-native-url-polyfill',
+  
+  // WebSocket polyfills
+  'ws': false, // Completely disable ws
+  'bufferutil': false,
+  'utf-8-validate': false,
 };
 
 module.exports = config;

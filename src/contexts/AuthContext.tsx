@@ -212,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const refreshInterval = setInterval(() => {
       // Refresh session every 50 minutes (tokens expire in 1 hour)
-      if (document.visibilityState === 'visible') {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         refreshUserSession();
       }
     }, 50 * 60 * 1000);
@@ -223,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Handle visibility change to prevent issues when switching tabs
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && session?.user) {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && session?.user) {
         // When user comes back to the tab, check if session is still valid
         console.log('Tab became visible, checking session...');
         setTimeout(() => {
@@ -239,8 +239,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+    return () => {};
   }, [session, refreshUserSession]);
 
   const value = {
