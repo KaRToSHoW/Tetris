@@ -1,191 +1,256 @@
-Отчет по лабораторной работе: Управление ресурсами и использование хуков в мобильном приложении (React Native)
+% Отчет по лабораторной работе
 
-Дата: 10 октября 2025 г.
+# Управление ресурсами и использование хуков в мобильном приложении (React Native)
 
-Автор: (Ваше имя)
+**Дата:** 10 октября 2025 г.
 
-Ссылка на репозиторий: https://github.com/KaRToSHoW/Tetris
+**Автор:** (Ваше имя)
 
-## Введение
+**Репозиторий проекта:** https://github.com/KaRToSHoW/Tetris
 
-Цель: Научиться эффективно управлять ресурсами мобильного приложения и использовать хуки для управления состоянием и жизненным циклом компонентов.
+---
+
+## Оглавление
+
+1. Введение
+2. Цели и задачи
+3. Архитектура решения — кратко
+4. Реализованные ресурсы и стратегия управления
+5. Примеры кода (с пояснениями)
+   - 5.1. Хук useResourceLoader
+   - 5.2. Хук useMultipleResources
+   - 5.3. Хуки игрового слоя (useGameRecords, usePlayerSettings, usePlayerStats)
+   - 5.4. Контекст аутентификации (AuthContext)
+6. Тестирование и проверка работы
+7. Инструкции по развёртыванию и сборке отчёта (PDF)
+8. Заключение
+9. Приложения (список файлов)
+
+---
+
+## 1. Введение
+
+В данной лабораторной работе реализована демонстрационная часть — мини-приложение Tetris на базе React Native и Expo. Основное внимание уделено эффективному управлению ресурсами приложения (сеть, локальное хранилище, кэш), а также использованию React-хуков для управления состоянием и жизненным циклом компонентов.
+
+## 2. Цели и задачи
+
+Цель:
+- Научиться эффективно управлять ресурсами мобильного приложения и использовать хуки для управления состоянием и жизненным циклом компонентов.
 
 Задачи:
-- Управление ресурсами приложения (данные, API, локальное хранилище и т.д.).
-- Использование хуков (`useState`, `useEffect`, `useReducer`, `useCallback` и др.) для управления состоянием и жизненным циклом компонентов.
+- Реализовать управление ресурсами приложения: получение и кэширование данных, повторные попытки запросов, локальное хранение сессии.
+- Применить хуки (`useState`, `useEffect`, `useReducer`, `useCallback`, `useMemo`, `useRef`) для управления состоянием, эффектами и оптимизацией.
 
-В этой работе реализовано мини-приложение (Tetris) на React Native / Expo. В проекте используются собственные хуки для управления ресурсами и игровыми данными, а также контекст для аутентификации.
+## 3. Архитектура решения — кратко
 
----
+Структура приложения организована по принципу разделения ответственности:
+- UI-компоненты находятся в `src/components`.
+- Логика работы с удалённым API и базой данных — в `src/lib/supabase.ts`.
+- Повторно используемые хуки и логика загрузки ресурсов — в `src/hooks`.
+- Контекст аутентификации — `src/contexts/AuthContext.tsx`.
 
-## 1. Описание реализованных ресурсов и стратегий управления
+Такой подход позволяет выносить сложную логику (retry, кэш, тайминги) из компонентов в переиспользуемые хуки, что упрощает тестирование и поддержку.
 
-В проекте используются следующие ресурсы:
+## 4. Реализованные ресурсы и стратегия управления
 
-1. Удаленный API (Supabase) — хранение профилей, рекордов, статистики, настроек.
-2. Локальное хранилище (AsyncStorage) — для хранения сессии и некоторых настроек на устройстве.
-3. Временные ресурсы и кэш — храним кэшированные ответы с меткой времени и используем их при повторных запросах.
-4. Повторные попытки и отложенные операции — при сетевых ошибках выполняются экспоненциальные повторные попытки.
+Ресурсы, используемые приложением:
+- Supabase (API + база данных) — профиль пользователя, рекорды, статистика и настройки.
+- AsyncStorage — локальное сохранение сессии (используется Supabase при конфигурации).
+- Временный кэш в хуках — для минимизации лишних сетевых запросов.
 
-Ключевые механизмы управления ресурсами:
-- useResourceLoader (хуки) — универсальный загрузчик с кэшем, retry и тайм-аутами.
-- useMultipleResources — координация параллельной или последовательной загрузки нескольких источников.
-- useDebounceCallback — для предотвращения частых вызовов API (дебаунс).
-- Сервис `src/lib/supabase.ts` — обёртки для вызовов API и помощь в обновлении сессии.
+Стратегии управления:
+- Кэширование с таймаутом (см. `useResourceLoader`).
+- Повторные попытки с увеличением задержки (exponential backoff-подобный механизм).
+- Отложенное выполнение операций (например, при скрытой вкладке в браузере — проверка `document.visibilityState`).
+- Централизация сетевых вызовов в `src/lib/supabase.ts` и дополнительная обёртка `apiCall` с retry-логикой.
 
----
+## 5. Примеры кода (с пояснениями)
 
-## 2. Листинги кода с комментариями
+Ниже приведены сокращённые, но содержательные фрагменты из основных хуков и контекстов. В отчёте приведены пояснения к ключевым частям.
 
-Ниже приведены ключевые фрагменты кода из проекта с комментариями, объясняющими принцип работы.
+### 5.1. Хук useResourceLoader (полный функционал — `src/hooks/useResourceManager.ts`)
 
-### 2.1. Хук `useResourceLoader` (файл: `src/hooks/useResourceManager.ts`)
+Описание: Универсальный хук для загрузки одного ресурса. Включает кэширование, retry и возможность принудительного обновления.
 
-// Сокращённый листинг
+Ключевые моменты:
+- useReducer для управления состоянием ресурса (data, isLoading, error, lastUpdated, retryCount).
+- useCallback для функции загрузки, useRef для хранения таймаутов.
+- Встроенная логика повторных попыток и кэширования.
+
+Фрагмент кода (с пояснениями):
 
 ```ts
-// useResourceLoader: универсальный хук для загрузки ресурсов
-export function useResourceLoader<T>(loadFunction: () => Promise<T>, options = {}) {
-  // useReducer для управления комплексным состоянием ресурса
-  const [state, dispatch] = useReducer(resourceReducer<T>, {
-    data: null, isLoading: false, error: null, lastUpdated: null, retryCount: 0
+// Инициализация состояния через useReducer
+const [state, dispatch] = useReducer(resourceReducer<T>, {
+  data: null,
+  isLoading: false,
+  error: null,
+  lastUpdated: null,
+  retryCount: 0,
+});
+
+// Мемоизированная функция загрузки ресурса
+const load = useCallback(async (force = false) => {
+  // 1) Проверка кэша: если данные свежи и не требуется принудительная загрузка
+  if (!force && state.data && state.lastUpdated) {
+    const timeSince = Date.now() - state.lastUpdated.getTime();
+    if (timeSince < cacheTimeout) return; // используем кэш
+  }
+
+  dispatch({ type: 'LOADING_START' });
+
+  try {
+    const data = await loadFunctionRef.current(); // вызов внешнего API
+    dispatch({ type: 'LOADING_SUCCESS', payload: data });
+  } catch (err) {
+    dispatch({ type: 'LOADING_ERROR', payload: (err as Error).message });
+    // 2) Retry: если ошибки и попыток меньше заданного лимита — планируем повтор
+    if (state.retryCount < retryAttempts) {
+      retryTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'RETRY' });
+        load(force);
+      }, retryDelay * (state.retryCount + 1));
+    }
+  }
+}, [state.data, state.lastUpdated, state.retryCount]);
+```
+
+Пояснение: Основной цикл — попытка загрузки, сохранение в состоянии или планирование повторной попытки при ошибке. Это покрывает случаи временных сбоев сети.
+
+### 5.2. Хук useMultipleResources
+
+Описание: Координирует загрузку нескольких ресурсов, предоставляет индикатор прогресса.
+
+Ключевые моменты:
+- Можно загружать параллельно (Promise.allSettled) или последовательно.
+- Поддерживает стратегию failFast: останов при первой ошибке.
+
+Фрагмент:
+
+```ts
+async function loadAll() {
+  const keys = Object.keys(resources);
+  if (loadInParallel) {
+    const promises = keys.map(k => loadResource(k as keyof T));
+    await Promise.allSettled(promises);
+  } else {
+    for (const k of keys) await loadResource(k as keyof T);
+  }
+}
+```
+
+### 5.3. Игровые хуки (useGameData.ts)
+
+Описание: Набор хуков, управляющих рекордами, настройками и статистикой игрока. Показывают сочетание `useState`, `useEffect`, `useCallback`, `useMemo`.
+
+Ключевые примеры:
+- `useGameRecords` — загрузка топ-результатов и локальных записей, сохранение новых результатов и обновление списков.
+- `usePlayerSettings` — загрузка, локальное редактирование и сохранение настроек игрока.
+- `usePlayerStats` — загрузка аналитики и вычисление ранга игрока.
+
+Фрагмент `useGameRecords`:
+
+```ts
+const [records, setRecords] = useState<GameRecord[]>([]);
+const loadTopScores = useCallback(async (limit = 10) => {
+  setIsLoading(true);
+  try {
+    const scores = await GameService.getTopScores(limit);
+    setTopScores(scores);
+  } finally { setIsLoading(false); }
+}, []);
+
+useEffect(() => { loadTopScores(); }, [loadTopScores]);
+```
+
+### 5.4. Контекст аутентификации (AuthContext.tsx)
+
+Описание: Контекст предоставляет глобальную аутентификацию (signIn, signUp, signOut, refreshUserSession). Основные моменты:
+- Получение сессии при старте: `supabase.auth.getSession()`.
+- Подписка на события аутентификации: `supabase.auth.onAuthStateChange`.
+- Автоматическое обновление токенов и безопасная работа с `document` (для web).
+
+Фрагмент (важные места):
+
+```ts
+useEffect(() => {
+  // Получаем текущую сессию
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setSession(session);
+    if (session?.user) { const { data: profile } = await getUserProfile(session.user.id); setUser(profile); }
+  };
+  getSession();
+
+  // Подписка на изменения состояния аутентификации
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    setSession(session);
+    // загрузка профиля при входе
+    if (session?.user) { const { data: profile } = await getUserProfile(session.user.id); setUser(profile || null); }
   });
 
-  // load: загружает ресурс, учитывает кэш, обрабатывает ошибки и выполняет повторные попытки
-  const load = useCallback(async (force = false) => {
-    // проверка кэша: если данные свежие и force = false — использовать кэш
-    if (!force && state.data && state.lastUpdated) { ... }
-
-    dispatch({ type: 'LOADING_START' });
-
-    try {
-      const data = await loadFunction();
-      dispatch({ type: 'LOADING_SUCCESS', payload: data });
-    } catch (error) {
-      dispatch({ type: 'LOADING_ERROR', payload: error.message });
-      // логика повторных попыток с увеличением задержки
-    }
-  }, [state.data, state.lastUpdated, state.retryCount]);
-
-  useEffect(() => { if (autoLoad) load(); return cleanup; }, [autoLoad, load]);
-
-  return { ...state, load, refresh, reset, canRetry, isStale };
-}
+  return () => subscription.unsubscribe();
+}, []);
 ```
 
-Комментарий: Этот хук демонстрирует использование `useReducer` для сложного локального состояния ресурса, `useCallback` для мемоизации функций, `useRef` для хранения таймаутов, и `useEffect` для автоматической загрузки при монтировании.
+Пояснение: Контекст упрощает доступ к данным пользователя из любого компонента и централизует логику обновления сессии.
 
 ---
 
-### 2.2. Координация нескольких ресурсов — `useMultipleResources` (файл: `src/hooks/useResourceManager.ts`)
+## 6. Тестирование и проверка работы
 
-```ts
-export function useMultipleResources(resources, options = {}) {
-  // Загрузка в параллели или последовательно, обработка ошибок (failFast)
-  const loadAll = useCallback(async () => {
-    if (loadInParallel) {
-      const promises = resourceKeys.map(key => loadResource(key));
-      await Promise.allSettled(promises);
-    } else {
-      for (const key of resourceKeys) { await loadResource(key); }
-    }
-  }, [resources, loadInParallel]);
-}
+Проверки, проведённые в ходе разработки:
+- Web bundling: исправлена проблема с зависимостью `text-encoding` — добавлен платформозависимый `polyfills` (файлы `src/polyfills.ts` и `src/polyfills.web.ts`).
+- Native (Android/iOS): устранена ошибка `document is not defined` — все обращения к `document` обёрнуты в `typeof document !== 'undefined'`.
+- База данных: добавлена миграция `supabase/migrations/001_init.sql` для создания таблиц `profiles`, `player_stats`, `game_settings`, `records`.
+
+Ручная проверка:
+- Запуск `npm run web` в локальной среде должен больше не выдавать ошибку про `text-encoding`.
+- При успешном применении миграции в Supabase, регистрация пользователей и создание профилей должны работать корректно.
+
+## 7. Инструкции по развёртыванию и сборке отчёта (PDF)
+
+1. Установка зависимостей и запуск проекта:
+
+```powershell
+npm install
+npm run web         # Запуск в браузере
+npm run android     # Запуск на Android (требуется Android SDK / эмулятор)
 ```
 
-Комментарий: Используется для загрузки нескольких API-ресурсов одновременно, а также для получения прогресса и статуса загрузки.
+2. Применение миграции к Supabase (вариант — через SQL Editor в панели Supabase):
+- Откройте `supabase/migrations/001_init.sql` и выполните содержимое через SQL editor вашего проекта Supabase.
 
----
+3. Экспорт отчёта в PDF:
+- Через VSCode: открыть `REPORT.md` → Print → Save as PDF.
+- Через pandoc (если установлен):
 
-### 2.3. Использование хуков в игровом домене — `useGameRecords`, `usePlayerSettings`, `usePlayerStats` (файл: `src/hooks/useGameData.ts`)
-
-```ts
-// Пример: useGameRecords
-export function useGameRecords(playerName) {
-  const [records, setRecords] = useState([]);
-  const [topScores, setTopScores] = useState([]);
-
-  const loadTopScores = useCallback(async (limit = 10) => {
-    setIsLoading(true);
-    try { const scores = await GameService.getTopScores(limit); setTopScores(scores); }
-    finally { setIsLoading(false); }
-  }, []);
-
-  useEffect(() => { loadTopScores(); }, [loadTopScores]);
-}
-```
-
-Комментарий: `useEffect` отвечает за загрузку при монтировании, `useCallback` используется для стабилизации API-вызовов между рендерами, `useMemo` для вычисления агрегированных значений (например, средний счёт).
-
----
-
-### 2.4. Контекст аутентификации (файл: `src/contexts/AuthContext.tsx`)
-
-Ключевые аспекты:
-- Инициализация сессии при старте через `supabase.auth.getSession()`.
-- Подписка на изменения состояния аутентификации с помощью `supabase.auth.onAuthStateChange`.
-- Автоматическое обновление сессии с использованием `setInterval` (при видимости вкладки — проверка `document.visibilityState` для web).
-- Безопасное использование `document` с проверкой `typeof document !== 'undefined'` для нативных платформ.
-
-Комментарий: Контекст предоставляет глобальные методы `signIn`, `signUp`, `signOut`, `refreshUserSession`, которые используют Supabase-сервис; подобная организация упрощает доступ к аутентификации из любого компонента.
-
----
-
-## 3. Пояснение использования хуков для управления состоянием и жизненным циклом
-
-1. useState
-   - Простой локальный state управления UI и представлением данных (например, списки рекордов, индикаторы загрузки, ошибки).
-2. useEffect
-   - Выполнение побочных эффектов: загрузка данных при монтировании, подписка/отписка от событий, очистка таймеров.
-3. useReducer
-   - Подходит для сложных состояний, где много частных флагов (использован в `useResourceLoader` для управления состоянием загрузок).
-4. useCallback / useMemo
-   - Меморизация функций и вычислений для оптимизации рендеров и предотвращения лишних вызовов эффектов.
-5. useRef
-   - Для хранения таймеров и mutable-значений, которые не должны инициировать перерендеры.
-
----
-
-## 4. Примеры управления ресурсами в приложении
-
-1. Кэширование и проверка времени жизни данных (см. `useResourceLoader`) — предотвращает лишние сетевые запросы.
-2. Повторные попытки при сетевых ошибках — экспоненциальная задержка между попытками.
-3. Отложенные операции при скрытой вкладке (для web) — проверка `document.visibilityState` и откладывание выполнения запроса до момента видимости.
-4. Локальное хранение сессии (AsyncStorage) используется Supabase для сохранения токенов на устройстве.
-
----
-
-## 5. Как собрать PDF-отчет
-
-1. Вариант 1 — использовать pandoc (если установлен):
-
-```bash
+```powershell
 pandoc REPORT.md -o REPORT.pdf --from markdown --pdf-engine=xelatex
 ```
 
-2. Вариант 2 — открыть `REPORT.md` в VSCode и выбрать Print → Save as PDF.
-3. Вариант 3 — использовать GitHub: создать `REPORT.md` в репозитории, открыть в браузере и распечатать страницу в PDF.
+## 8. Заключение
+
+В ходе работы реализована надёжная и переиспользуемая система управления ресурсами в мобильном приложении на React Native. Основные достижения:
+- Переиспользуемые хуки для загрузки и координации ресурсов.
+- Централизованная обработка сетевых вызовов и retry-логика.
+- Кросс-платформенная устойчивость (web/native) за счёт условных проверок и platform-specific polyfills.
+
+Эти подходы улучшают стабильность приложения и упрощают поддержку и масштабирование.
+
+## 9. Приложения (список файлов для изучения)
+
+- `src/hooks/useResourceManager.ts`
+- `src/hooks/useGameData.ts`
+- `src/contexts/AuthContext.tsx`
+- `src/lib/supabase.ts`
+- `src/polyfills.ts`, `src/polyfills.web.ts`
+- `supabase/migrations/001_init.sql`
 
 ---
 
-## 6. Выводы
+Спасибо! Если хотите, я могу:
+- добавить в отчёт полные (не усечённые) листинги конкретных файлов;
+- сгенерировать PDF-версию здесь (если разрешите запуск pandoc/LaTeX);
+- подготовить PR с добавлениями (README, REPORT.pdf и миграцией) и запушить его в ветку.
 
-В ходе лабораторной работы были реализованы методы эффективного управления ресурсами приложения и продемонстрировано использование хуков React Native для управления состоянием и жизненным циклом компонентов. Основные принципы:
-- Разделение ответственности: отделить логику загрузки данных от UI-компонентов (хуки, сервисы).
-- Безопасный кроссплатформенный код: проверять наличие Web-API (`document`) на нативных платформах.
-- Кэширование, retry и дедупликация запросов повышают стабильность работы при плохом соединении.
-
----
-
-## 7. Приложение: полезные ссылки
-
-- Репозиторий проекта: https://github.com/KaRToSHoW/Tetris
-- Файлы в проекте для изучения:
-  - `src/hooks/useResourceManager.ts`
-  - `src/hooks/useGameData.ts`
-  - `src/contexts/AuthContext.tsx`
-  - `src/lib/supabase.ts`
-
----
-
-Отчёт сгенерирован автоматически на основе исходного кода проекта. Для получения PDF используйте предложенные способы экспорта.

@@ -1,4 +1,4 @@
-import { supabase, GameRecord, GameSettings, PlayerStats } from '../lib/supabase.ts';
+import { supabase, GameRecord, PlayerStats, Game_Settings } from '../lib/supabase';
 
 /**
  * Сервис для работы с игровыми данными в Supabase
@@ -13,9 +13,8 @@ export class GameService {
   static async saveGameRecord(record: Omit<GameRecord, 'id' | 'created_at'>): Promise<GameRecord | null> {
     try {
       console.log('Saving game record:', record);
-      
       const { data, error } = await supabase
-        .from('game_records')
+        .from('records')
         .insert([record])
         .select()
         .single();
@@ -40,9 +39,8 @@ export class GameService {
   static async getTopScores(limit: number = 10): Promise<GameRecord[]> {
     try {
       console.log('Fetching top scores, limit:', limit);
-      
       const { data, error } = await supabase
-        .from('game_records')
+        .from('records')
         .select('*')
         .order('score', { ascending: false })
         .limit(limit);
@@ -64,16 +62,20 @@ export class GameService {
    * Получение результатов игрока
    * Управление персональными ресурсами
    */
-  static async getPlayerRecords(playerName: string, limit: number = 20): Promise<GameRecord[]> {
+  // identifier: can be userId (uuid) or playerName (string)
+  static async getPlayerRecords(identifier: string, limit: number = 20): Promise<GameRecord[]> {
     try {
-      console.log('Fetching player records for:', playerName);
-      
-      const { data, error } = await supabase
-        .from('game_records')
+      console.log('Fetching player records for identifier:', identifier);
+      const isUuid = /^[0-9a-fA-F-]{36}$/.test(identifier);
+      let query: any = supabase
+        .from('records')
         .select('*')
-        .eq('player_name', playerName)
         .order('created_at', { ascending: false })
         .limit(limit);
+
+      query = isUuid ? query.eq('user_id', identifier) : query.eq('player_name', identifier);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching player records:', error);
@@ -92,16 +94,27 @@ export class GameService {
    * Сохранение настроек игрока
    * Управление пользовательскими предпочтениями
    */
-  static async savePlayerSettings(settings: Omit<GameSettings, 'id' | 'created_at' | 'updated_at'>): Promise<GameSettings | null> {
+  static async savePlayerSettings(settings: Omit<Game_Settings, 'id' | 'created_at' | 'updated_at'>): Promise<Game_Settings | null> {
     try {
       console.log('Saving player settings:', settings);
-      
-      // Сначала пытаемся обновить существующие настройки
-      const { data: existingData } = await supabase
-        .from('game_settings')
-        .select('id')
-        .eq('player_name', settings.player_name)
-        .single();
+      // Prefer matching by user_id if provided (backwards-compatible)
+  const isUuid = settings.user_id && /^[0-9a-fA-F-]{36}$/.test(settings.user_id || '');
+      let existingData;
+      if (isUuid) {
+        const res = await supabase
+          .from('game_settings')
+          .select('id')
+          .eq('user_id', settings.user_id)
+          .single();
+        existingData = res.data;
+      } else {
+        const res = await supabase
+          .from('game_settings')
+          .select('id')
+          .eq('player_name', settings.player_name)
+          .single();
+        existingData = res.data;
+      }
 
       let result;
       
@@ -140,20 +153,18 @@ export class GameService {
    * Загрузка настроек игрока
    * Управление состоянием пользовательских настроек
    */
-  static async getPlayerSettings(playerName: string): Promise<GameSettings | null> {
+  static async getPlayerSettings(identifier: string): Promise<Game_Settings | null> {
     try {
-      console.log('Fetching player settings for:', playerName);
-      
-      const { data, error } = await supabase
-        .from('game_settings')
-        .select('*')
-        .eq('player_name', playerName)
-        .single();
+      console.log('Fetching player settings for identifier:', identifier);
+      const isUuid = /^[0-9a-fA-F-]{36}$/.test(identifier);
+      let query: any = supabase.from('game_settings').select('*').single();
+      query = isUuid ? query.eq('user_id', identifier) : query.eq('player_name', identifier);
+      const { data, error } = await query;
 
       if (error) {
         if (error.code === 'PGRST116') {
           // Записи не найдены - это нормально для нового игрока
-          console.log('No settings found for player:', playerName);
+          console.log('No settings found for identifier:', identifier);
           return null;
         }
         console.error('Error fetching player settings:', error);
@@ -172,45 +183,41 @@ export class GameService {
    * Обновление статистики игрока
    * Управление агрегированными данными
    */
-  static async updatePlayerStats(playerName: string, gameData: {
+  static async updatePlayerStats(identifier: string, gameData: {
     score: number;
     linesCleared: number;
     timePlayed: number;
   }): Promise<PlayerStats | null> {
     try {
-      console.log('Updating player stats for:', playerName, gameData);
-      
-      // Получаем текущую статистику
-      const { data: currentStats } = await supabase
-        .from('player_stats')
-        .select('*')
-        .eq('player_name', playerName)
-        .single();
+      console.log('Updating player stats for identifier:', identifier, gameData);
+      const isUuid = /^[0-9a-fA-F-]{36}$/.test(identifier);
+      let statsQuery: any = supabase.from('player_stats').select('*').single();
+      statsQuery = isUuid ? statsQuery.eq('user_id', identifier) : statsQuery.eq('player_name', identifier);
+      const { data: currentStats } = await statsQuery;
 
-      const newStats: Omit<PlayerStats, 'id' | 'created_at' | 'updated_at'> = currentStats 
+      const newStats: Omit<PlayerStats, 'id' | 'created_at' | 'updated_at'> = currentStats
         ? {
-            player_name: playerName,
-            total_games: currentStats.total_games + 1,
-            total_score: currentStats.total_score + gameData.score,
-            best_score: Math.max(currentStats.best_score, gameData.score),
-            total_lines_cleared: currentStats.total_lines_cleared + gameData.linesCleared,
-            avg_time_per_game: Math.round(
-              (currentStats.avg_time_per_game * currentStats.total_games + gameData.timePlayed) / 
-              (currentStats.total_games + 1)
-            ),
+            user_id: isUuid ? identifier : (currentStats.user_id || undefined),
+            total_games: (currentStats.total_games || 0) + 1,
+            total_score: (currentStats.total_score || 0) + gameData.score,
+            best_score: Math.max(currentStats.best_score || 0, gameData.score),
+            total_lines_cleared: (currentStats.total_lines_cleared || 0) + gameData.linesCleared,
+            best_level_reached: currentStats.best_level_reached || 0,
+            total_time_played: (currentStats.total_time_played || 0) + gameData.timePlayed,
           }
         : {
-            player_name: playerName,
+            user_id: isUuid ? identifier : undefined,
             total_games: 1,
             total_score: gameData.score,
             best_score: gameData.score,
             total_lines_cleared: gameData.linesCleared,
-            avg_time_per_game: gameData.timePlayed,
+            best_level_reached: 0,
+            total_time_played: gameData.timePlayed,
           };
 
       let result;
       
-      if (currentStats) {
+  if (currentStats) {
         // Обновляем существующую статистику
         const { data, error } = await supabase
           .from('player_stats')
@@ -245,20 +252,18 @@ export class GameService {
    * Получение статистики игрока
    * Демонстрирует загрузку аналитических данных
    */
-  static async getPlayerStats(playerName: string): Promise<PlayerStats | null> {
+  static async getPlayerStats(identifier: string): Promise<PlayerStats | null> {
     try {
-      console.log('Fetching player stats for:', playerName);
-      
-      const { data, error } = await supabase
-        .from('player_stats')
-        .select('*')
-        .eq('player_name', playerName)
-        .single();
+      console.log('Fetching player stats for identifier:', identifier);
+      const isUuid = /^[0-9a-fA-F-]{36}$/.test(identifier);
+      let query: any = supabase.from('player_stats').select('*').single();
+      query = isUuid ? query.eq('user_id', identifier) : query.eq('player_name', identifier);
+      const { data, error } = await query;
 
       if (error) {
         if (error.code === 'PGRST116') {
           // Статистики еще нет - это нормально для нового игрока
-          console.log('No stats found for player:', playerName);
+          console.log('No stats found for identifier:', identifier);
           return null;
         }
         console.error('Error fetching player stats:', error);

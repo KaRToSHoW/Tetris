@@ -71,6 +71,40 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
     return g;
   }, [state.board, state.active]);
 
+  // Sound effects: play game theme on mount, stop on unmount
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const sm = await import('../sounds/soundManager');
+        if (mounted) sm.playMusic('game_theme');
+      } catch (e) {}
+    })();
+    return () => {
+      mounted = false;
+      (async () => {
+        try {
+          const sm = await import('../sounds/soundManager');
+          sm.stopMusic('game_theme');
+        } catch (e) {}
+      })();
+    };
+  }, []);
+
+  // Play 'collect' when linesCleared increases
+  const prevLinesRef = useRef<number>(0);
+  useEffect(() => {
+    if (state.linesCleared > prevLinesRef.current) {
+      (async () => {
+        try {
+          const sm = await import('../sounds/soundManager');
+          sm.playSound('collect');
+        } catch (e) {}
+      })();
+    }
+    prevLinesRef.current = state.linesCleared;
+  }, [state.linesCleared]);
+
   const nextPieceGrid = useMemo(() => {
     if (!state.next) return [];
     const matrix = TETROMINOES[state.next.key][0];
@@ -180,7 +214,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
           <View style={styles.controlRow}>
             <Pressable 
               style={[styles.btn, styles.moveBtn]} 
-              onPress={() => dispatch({ type: 'MOVE', dir: 'left' })}
+              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })(); dispatch({ type: 'MOVE', dir: 'left' }); }}
             >
               <Icon name="left" size={24} color={ICON_COLORS.secondary} />
               <Text style={styles.btnLabel}>Лево</Text>
@@ -188,7 +222,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
             
             <Pressable 
               style={[styles.btn, styles.moveBtn]} 
-              onPress={() => dispatch({ type: 'MOVE', dir: 'right' })}
+              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })(); dispatch({ type: 'MOVE', dir: 'right' }); }}
             >
               <Icon name="right" size={24} color={ICON_COLORS.secondary} />
               <Text style={styles.btnLabel}>Право</Text>
@@ -207,7 +241,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
             
             <Pressable 
               style={[styles.btn, styles.downBtn]} 
-              onPress={() => dispatch({ type: 'MOVE', dir: 'down' })}
+              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('down'); } catch(e){} })(); dispatch({ type: 'MOVE', dir: 'down' }); }}
             >
               <Icon name="down" size={24} color={ICON_COLORS.secondary} />
               <Text style={styles.btnLabel}>Вниз</Text>
@@ -218,7 +252,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
           <View style={styles.controlRow}>
             <Pressable 
               style={[styles.btn, styles.dropBtn]} 
-              onPress={() => dispatch({ type: 'HARD_DROP' })}
+              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })(); dispatch({ type: 'HARD_DROP' }); }}
             >
               <Icon name="drop" size={28} color={ICON_COLORS.secondary} />
               <Text style={styles.btnLabel}>Сброс</Text>
@@ -237,11 +271,11 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
 
       {/* Bottom Toolbar */}
       <View style={styles.bottomToolbar}>
-        <Pressable style={styles.toolbarBtn} onPress={() => onNavigate('menu')}>
+  <Pressable style={styles.toolbarBtn} onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); onNavigate('menu'); }}>
           <Icon name="home" size={14} color={ICON_COLORS.secondary} style={{ marginRight: 8 }} />
           <Text style={styles.toolbarBtnText}>Меню</Text>
         </Pressable>
-        <Pressable style={styles.toolbarBtn} onPress={() => dispatch({ type: 'RESTART' })}>
+  <Pressable style={styles.toolbarBtn} onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'RESTART' }); }}>
           <Icon name="restart" size={14} color={ICON_COLORS.secondary} style={{ marginRight: 8 }} />
           <Text style={styles.toolbarBtnText}>Заново</Text>
         </Pressable>
@@ -256,7 +290,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
             <View style={styles.pauseMenuContainer}>
               <Pressable 
                 style={[styles.pauseMenuItem, styles.resumeBtn]} 
-                onPress={() => dispatch({ type: 'PAUSE_TOGGLE' })}
+                onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'PAUSE_TOGGLE' }); }}
               >
                 <Icon name="play" size={18} color={ICON_COLORS.secondary} style={{ marginRight: 12 }} />
                 <Text style={styles.pauseMenuText}>Продолжить игру</Text>
@@ -264,10 +298,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
               
               <Pressable 
                 style={styles.pauseMenuItem} 
-                onPress={() => {
-                  dispatch({ type: 'PAUSE_TOGGLE' });
-                  onNavigate('settings');
-                }}
+                onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'PAUSE_TOGGLE' }); onNavigate('settings'); }}
               >
                 <Icon name="gear" size={18} color={ICON_COLORS.secondary} style={{ marginRight: 12 }} />
                 <Text style={styles.pauseMenuText}>Настройки</Text>
@@ -275,7 +306,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
               
               <Pressable 
                 style={styles.pauseMenuItem} 
-                onPress={() => dispatch({ type: 'RESTART' })}
+                onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'RESTART' }); }}
               >
                 <Icon name="restart" size={18} color={ICON_COLORS.secondary} style={{ marginRight: 12 }} />
                 <Text style={styles.pauseMenuText}>Новая игра</Text>
@@ -283,10 +314,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
               
               <Pressable 
                 style={styles.pauseMenuItem} 
-                onPress={() => {
-                  dispatch({ type: 'PAUSE_TOGGLE' });
-                  onNavigate('menu');
-                }}
+                onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'PAUSE_TOGGLE' }); onNavigate('menu'); }}
               >
                 <Icon name="home" size={18} color={ICON_COLORS.secondary} style={{ marginRight: 12 }} />
                 <Text style={styles.pauseMenuText}>Главное меню</Text>
@@ -309,11 +337,11 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
               <Text style={styles.finalStatText}>Достигнутый уровень: {state.level}</Text>
             </View>
             <View style={styles.gameOverButtons}>
-              <Pressable style={styles.gameOverBtn} onPress={() => dispatch({ type: 'RESTART' })}>
+              <Pressable style={styles.gameOverBtn} onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'RESTART' }); }}>
                 <Icon name="restart" size={16} color={ICON_COLORS.text} style={{ marginRight: 8 }} />
                 <Text style={styles.gameOverBtnText}>Играть снова</Text>
               </Pressable>
-              <Pressable style={[styles.gameOverBtn, styles.menuBtn]} onPress={() => onNavigate('menu')}>
+              <Pressable style={[styles.gameOverBtn, styles.menuBtn]} onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); onNavigate('menu'); }}>
                 <Icon name="home" size={16} color={ICON_COLORS.text} style={{ marginRight: 8 }} />
                 <Text style={styles.gameOverBtnText}>В меню</Text>
               </Pressable>

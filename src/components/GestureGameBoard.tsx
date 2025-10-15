@@ -37,13 +37,16 @@ export default function GestureGameBoard({
       if (absX > absY && (absX > minDistance || absVelX > minVelocity)) {
         // Horizontal swipe
         if (translationX > 0) {
+          (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
           onMove('right');
         } else {
+          (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
           onMove('left');
         }
       } else if (absY > absX && (absY > minDistance || absVelY > minVelocity)) {
         // Vertical swipe
         if (translationY > 0) {
+          (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('down'); } catch(e){} })();
           onMove('down');
         }
       }
@@ -58,6 +61,7 @@ export default function GestureGameBoard({
 
   const handleDoubleTap = (event: any) => {
     if (event.nativeEvent.state === State.END) {
+      (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
       onHardDrop();
     }
   };

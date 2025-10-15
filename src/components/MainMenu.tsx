@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import Icon, { ICON_COLORS } from './Icon';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +20,29 @@ const { width, height } = Dimensions.get('window');
 
 export default function MainMenu({ onNavigate }: MainMenuProps) {
   const { user, session } = useAuth();
+  // play menu music
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const sm = await import('../sounds/soundManager');
+        if (mounted) {
+          sm.playMusic('menu');
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => {
+      mounted = false;
+      (async () => {
+        try {
+          const sm = await import('../sounds/soundManager');
+          sm.stopMusic('menu');
+        } catch (e) {}
+      })();
+    };
+  }, []);
 
   // Dynamic menu items based on authentication status
   const getMenuItems = (): MenuItem[] => {
@@ -35,7 +58,6 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
 
     const endItems = [
       { key: 'multiplayer', label: 'Мультиплеер', icon: 'users', disabled: true, subtitle: '(в доработке)' },
-      { key: 'exit', label: 'Выход', icon: 'exit', disabled: false },
     ];
 
     return [...baseItems, authItem, ...endItems];
@@ -44,11 +66,12 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
   const menuItems = getMenuItems();
 
   const handlePress = (key: string) => {
-    if (key === 'exit') {
-      // In a real app, this would close the app
-      // For now, we'll just show an alert or do nothing
-      return;
-    }
+    (async () => {
+      try {
+        const sm = await import('../sounds/soundManager');
+        sm.playSound('click');
+      } catch (e) {}
+    })();
     onNavigate(key as Screen);
   };
 

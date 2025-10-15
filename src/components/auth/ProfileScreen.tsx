@@ -108,23 +108,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     setIsRefreshing(false);
   };
 
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Выход',
-      'Вы уверены, что хотите выйти?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Выйти',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            onNavigateToGame();
-          },
-        },
-      ]
-    );
-  };
+  // Note: signOut is intentionally kept in the AuthContext but the button
+  // is removed from the UI to match the requirement "убрать кнопку выход".
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -329,12 +314,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Text style={styles.buttonText}>🏆 Все рекорды</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={[styles.button, styles.signOutButton]} 
-            onPress={handleSignOut}
-          >
-            <Text style={styles.buttonText}>Выйти</Text>
-          </TouchableOpacity>
+          {/* Sign-out action removed from UI per requirements. */}
         </View>
       </View>
     </ScrollView>

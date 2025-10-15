@@ -432,20 +432,53 @@ export const getPlayerStats = async (userId: string) => {
 export const getTopRecords = async (limit: number = 10) => {
   return apiCall(async () => {
     try {
-      const { data, error } = await supabase
+      // Step 1: fetch top records
+      const { data: records, error: recordsError } = await supabase
         .from('records')
-        .select(`
-          *,
-          profiles!user_id (
-            username,
-            display_name
-          )
-        `)
+        .select('*')
         .order('score', { ascending: false })
         .limit(limit);
-      
-      if (error) throw error;
-      return { data, error: null };
+
+      if (recordsError) throw recordsError;
+
+      // If there are no records or none have user_id, return early
+      if (!records || records.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // Collect unique user_ids present in records
+      const userIds = Array.from(new Set(records.filter((r: any) => r.user_id).map((r: any) => r.user_id)));
+
+      let profilesMap: Record<string, any> = {};
+
+      if (userIds.length > 0) {
+        // Step 2: fetch profiles for those user_ids
+        try {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username, display_name')
+            .in('id', userIds);
+
+          if (!profilesError && profiles) {
+            profilesMap = profiles.reduce((acc: any, p: any) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          } else if (profilesError) {
+            console.warn('Failed to load profiles for top records:', profilesError);
+          }
+        } catch (e: any) {
+          console.warn('Error while fetching profiles for top records, continuing without profiles:', e?.message || e);
+        }
+      }
+
+      // Attach profile (if any) to each record under `profiles` key to keep UI compatibility
+      const enriched = records.map((r: any) => ({
+        ...r,
+        profiles: r.user_id ? profilesMap[r.user_id] || null : null,
+      }));
+
+      return { data: enriched, error: null };
     } catch (error: any) {
       return { data: null, error: error.message };
     }
@@ -647,18 +680,18 @@ export const updateUserProfile = async (userId: string, profile: Partial<UserPro
 export const getGameSettings = async (userId: string) => {
   return apiCall(async () => {
     try {
+      // Use maybeSingle to be tolerant if multiple rows exist (no unique constraint)
       const { data, error } = await supabase
         .from('game_settings')
         .select('*')
         .eq('user_id', userId)
-        .single();
-      
-      if (error && error.code === 'PGRST116') {
-        // Settings not found, return null (will use defaults)
-        return { data: null, error: null };
+        .maybeSingle();
+
+      if (error) {
+        return { data: null, error: error.message };
       }
 
-      if (error) throw error;
+      // data may be null if no settings exist; that's expected
       return { data, error: null };
     } catch (error: any) {
       return { data: null, error: error.message };
@@ -670,14 +703,69 @@ export const getGameSettings = async (userId: string) => {
 export const saveGameSettings = async (settings: Omit<Game_Settings, 'id' | 'created_at' | 'updated_at'>) => {
   return apiCall(async () => {
     try {
-      const { data, error } = await supabase
+      // First try: upsert with onConflict by user_id (works when a unique index exists)
+      try {
+        const { data, error } = await supabase
+          .from('game_settings')
+          .upsert(settings, { onConflict: 'user_id' })
+          .select()
+          .maybeSingle();
+
+        if (!error) {
+          return { data, error: null };
+        }
+
+        // If we have an error, fallthrough to manual upsert below
+        console.warn('upsert with onConflict failed, will fallback to manual insert/update:', error);
+      } catch (e: any) {
+        // If PostgREST returns 400 Bad Request for on_conflict, we'll fallback
+        console.warn('upsert with onConflict threw, will fallback to manual insert/update:', e?.message || e);
+      }
+
+      // Fallback: check if settings exist for this user_id and then update or insert
+      if (!settings.user_id) {
+        // user_id is required for per-user settings; insert as-is if missing
+        const { data: insertData, error: insertError } = await supabase
+          .from('game_settings')
+          .insert([settings])
+          .select()
+          .maybeSingle();
+
+        if (insertError) throw insertError;
+        return { data: insertData, error: null };
+      }
+
+      const { data: existing, error: getErr } = await supabase
         .from('game_settings')
-        .upsert(settings)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return { data, error: null };
+        .select('*')
+        .eq('user_id', settings.user_id)
+        .maybeSingle();
+
+      if (getErr) {
+        // If profiles/table missing or other DB error, propagate
+        throw getErr;
+      }
+
+      if (existing) {
+        const { data: updated, error: updateError } = await supabase
+          .from('game_settings')
+          .update(settings)
+          .eq('user_id', settings.user_id)
+          .select()
+          .maybeSingle();
+
+        if (updateError) throw updateError;
+        return { data: updated, error: null };
+      } else {
+        const { data: inserted, error: insertError } = await supabase
+          .from('game_settings')
+          .insert([settings])
+          .select()
+          .maybeSingle();
+
+        if (insertError) throw insertError;
+        return { data: inserted, error: null };
+      }
     } catch (error: any) {
       return { data: null, error: error.message };
     }
