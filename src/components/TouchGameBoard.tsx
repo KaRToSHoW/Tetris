@@ -37,13 +37,16 @@ export default function TouchGameBoard({
         if (absX > absY) {
           // Horizontal swipe
           if (dx > 0) {
+            (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
             onMove('right');
           } else {
+            (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
             onMove('left');
           }
         } else {
           // Vertical swipe down
           if (dy > 0) {
+            (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('down'); } catch(e){} })();
             onMove('down');
           }
         }
@@ -64,6 +67,7 @@ export default function TouchGameBoard({
         
         if (timeSinceLastTap < 300) {
           // Double tap - hard drop
+          (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
           onHardDrop();
           lastTap.current = 0;
         } else {
@@ -82,12 +86,15 @@ export default function TouchGameBoard({
           if (Math.abs(vx) > Math.abs(vy)) {
             // Horizontal swipe
             if (vx > 0) {
+              (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
               onMove('right');
             } else {
+              (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })();
               onMove('left');
             }
           } else if (vy > 0) {
             // Vertical swipe down
+            (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('down'); } catch(e){} })();
             onMove('down');
           }
         }

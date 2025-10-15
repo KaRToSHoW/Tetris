@@ -25,19 +25,26 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         currentScreen: action.screen,
       };
     
-    case 'UPDATE_SETTINGS':
+    case 'UPDATE_SETTINGS': {
+      const newSettings = {
+        ...state.gameSettings,
+        ...action.settings,
+      };
+      
+      // Settings now saved through Supabase hooks
+      
       return {
         ...state,
-        gameSettings: {
-          ...state.gameSettings,
-          ...action.settings,
-        },
+        gameSettings: newSettings,
       };
+    }
     
     case 'ADD_HIGH_SCORE': {
       const newRecords = [...state.records, action.score]
         .sort((a, b) => b.score - a.score)
         .slice(0, 5); // Keep only top 5 scores
+      
+      // Records now saved through Supabase hooks
       
       return {
         ...state,
@@ -45,11 +52,14 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
     
-    case 'RESET_RECORDS':
+    case 'RESET_RECORDS': {
+      // Records now managed through Supabase hooks
+      
       return {
         ...state,
         records: [],
       };
+    }
     
     default:
       return state;
