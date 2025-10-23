@@ -284,7 +284,7 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0D0D12', // Глубокий черный
   },
   header: {
     flexDirection: 'row',
@@ -294,32 +294,37 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(0, 255, 255, 0.2)', // Тонкая неоновая линия
   },
   backButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 5, // Для удобства нажатия
   },
   backButtonText: {
-    color: '#00ffff',
+    color: '#00ffff', // Неоновый голубой
     fontSize: 16,
     fontWeight: '600',
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
     flex: 2,
+    textShadowColor: 'rgba(0, 255, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   userInfo: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#1a1a2e', // Темно-синий
     paddingHorizontal: 20,
     paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: '#00e676', // Неоновый зеленый
   },
   userInfoText: {
-    color: '#4CAF50',
+    color: '#00e676', // Неоновый зеленый
     fontSize: 14,
     textAlign: 'center',
   },
@@ -344,22 +349,36 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#00ffff',
     marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#00ffff',
+    paddingLeft: 10,
+    textShadowColor: 'rgba(0, 255, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
+  },
+  // Базовый стиль для всех опций (стекловидный эффект)
+  optionBase: {
+    backgroundColor: 'rgba(10, 10, 20, 0.75)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   difficultyOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#333',
   },
   difficultyOptionSelected: {
-    borderColor: '#00ffff',
-    backgroundColor: '#001a1a',
+    borderColor: '#00ffff', // Яркая неоновая рамка
+    backgroundColor: 'rgba(0, 255, 255, 0.1)', // Светлый неоновый фон
+    shadowColor: '#00ffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 3,
   },
   difficultyContent: {
     flex: 1,
@@ -371,21 +390,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   difficultyLabelSelected: {
-    color: '#00ffff',
+    color: '#00ffff', // Неоновый голубой для выбранного
   },
   difficultyDescription: {
     fontSize: 14,
-    color: '#888',
+    color: '#aaaaaa', // Светло-серый
   },
   toggleOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#333',
   },
   toggleContent: {
     flex: 1,
@@ -399,24 +412,27 @@ const styles = StyleSheet.create({
   },
   toggleDescription: {
     fontSize: 14,
-    color: '#888',
+    color: '#aaaaaa',
   },
   guestNote: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(10, 10, 20, 0.9)',
     borderRadius: 12,
     padding: 20,
     marginTop: 30,
     marginBottom: 30,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#333',
+    borderWidth: 2,
+    borderColor: '#00e676', // Неоновый зеленый акцент
   },
   guestNoteTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#00e676',
     textAlign: 'center',
     marginBottom: 10,
+    textShadowColor: 'rgba(0, 230, 118, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   guestNoteText: {
     fontSize: 14,
@@ -426,13 +442,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#00ffff', // Неоновый голубой
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    // Неоновое свечение для кнопки
+    shadowColor: '#00ffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 5,
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: '#000000', // Черный текст на неоновом фоне
     fontSize: 16,
     fontWeight: 'bold',
   },

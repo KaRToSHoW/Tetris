@@ -423,21 +423,21 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0D0D12', // Более глубокий черный
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 60, // Оставляем для SafeArea
+    paddingBottom: 15, // Чуть меньше
+    // Неоновая линия-разделитель
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(0, 255, 255, 0.2)', 
   },
   backButton: {
     flex: 1,
@@ -445,30 +445,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    color: '#00ffff',
+    color: '#00ffff', // Неоновый голубой
     fontSize: 16,
     fontWeight: '600',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textAlign: 'center',
     flex: 2,
+    fontSize: 28, // Крупнее
+    fontWeight: 'bold',
+    color: '#00ffff', // Неоновый голубой
+    textAlign: 'center',
+    // Свечение
+    textShadowColor: 'rgba(0, 255, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   resetButton: {
     flex: 1,
     alignItems: 'flex-end',
   },
   resetButtonText: {
-    color: '#ff4444',
+    color: '#ff4174', // Неоновый красный/розовый
     fontSize: 14,
     fontWeight: '600',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
-    margin: 20,
+    backgroundColor: 'rgba(10, 10, 20, 0.9)', // Темный полупрозрачный
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderRadius: 10,
     padding: 4,
   },
@@ -479,23 +484,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#00ffff',
+    backgroundColor: '#00ffff', // Активный таб
   },
   tabText: {
-    color: '#cccccc',
+    color: '#aaaaaa', // Светло-серый
     fontSize: 16,
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#000000',
+    color: '#000000', // Черный для контраста
   },
   guestInfo: {
-    backgroundColor: '#1a1a1a',
+    // Убрал фон, просто текст
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingBottom: 20, // Отступ снизу
   },
   guestInfoText: {
-    color: '#cccccc',
+    color: '#aaaaaa',
     fontSize: 14,
     textAlign: 'center',
   },
@@ -505,9 +510,11 @@ const styles = StyleSheet.create({
   guestMessage: {
     padding: 30,
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(10, 10, 20, 0.75)', // Эффект стекла
     margin: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.3)', // Неоновая рамка
   },
   guestTitle: {
     fontSize: 20,
@@ -518,19 +525,19 @@ const styles = StyleSheet.create({
   },
   guestDescription: {
     fontSize: 16,
-    color: '#cccccc',
+    color: '#aaaaaa', // Светлее
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
   },
   loginButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#00ffff', // Основной акцентный цвет
     paddingHorizontal: 30,
     paddingVertical: 12,
     borderRadius: 8,
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: '#000000', // Черный для контраста
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -539,32 +546,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#cccccc',
+    color: '#aaaaaa',
     marginTop: 10,
     fontSize: 16,
   },
   errorContainer: {
     padding: 30,
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(20, 10, 10, 0.75)', // Стекло с красным оттенком
     margin: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ff4174', // Неоновая красная рамка
   },
   errorText: {
     fontSize: 16,
-    color: '#ff4444',
+    color: '#ff4174', // Неоновый красный
     textAlign: 'center',
     marginBottom: 20,
     paddingHorizontal: 20,
   },
   retryButton: {
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#ff9800', // Яркий "аркадный" оранжевый
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -584,7 +593,7 @@ const styles = StyleSheet.create({
   },
   emptyDescription: {
     fontSize: 16,
-    color: '#888',
+    color: '#aaaaaa', // Светлее
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 30,
@@ -592,18 +601,18 @@ const styles = StyleSheet.create({
   playButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00ffff',
+    backgroundColor: '#00ffff', // Основной цвет
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   playButtonText: {
-    color: '#000000',
+    color: '#000000', // Черный
     fontSize: 16,
     fontWeight: 'bold',
   },
   recordsList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15, // Чуть меньше
     paddingBottom: 20,
   },
   tableHeader: {
@@ -611,7 +620,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(10, 10, 20, 0.9)', // Темная "стеклянная" шапка
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -619,14 +628,14 @@ const styles = StyleSheet.create({
     width: 40,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa', // Светлее
     textAlign: 'center',
   },
   headerPlayer: {
     flex: 1.5,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa',
     textAlign: 'left',
     marginRight: 10,
   },
@@ -634,35 +643,35 @@ const styles = StyleSheet.create({
     width: 80,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa',
     textAlign: 'center',
   },
   headerLines: {
     width: 50,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa',
     textAlign: 'center',
   },
   headerLevel: {
     width: 40,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa',
     textAlign: 'center',
   },
   headerTime: {
     width: 60,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa',
     textAlign: 'center',
   },
   headerDate: {
     width: 80,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa',
     textAlign: 'center',
   },
   recordItem: {
@@ -670,27 +679,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#111',
+    backgroundColor: 'rgba(15, 15, 25, 0.7)', // Стеклянный элемент
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#333',
+    borderLeftColor: 'rgba(0, 255, 255, 0.4)', // Рамка по умолчанию
   },
   firstPlace: {
     borderLeftColor: '#FFD700',
-    backgroundColor: '#1a1610',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)', // Золотое свечение
   },
   secondPlace: {
     borderLeftColor: '#C0C0C0',
-    backgroundColor: '#161618',
+    backgroundColor: 'rgba(192, 192, 192, 0.1)', // Серебряное свечение
   },
   thirdPlace: {
     borderLeftColor: '#CD7F32',
-    backgroundColor: '#161410',
+    backgroundColor: 'rgba(205, 127, 50, 0.1)', // Бронзовое свечение
   },
   userRecord: {
-    borderLeftColor: '#4CAF50',
-    backgroundColor: '#0a1a0a',
+    borderLeftColor: '#00e676', // Неоновый зеленый
+    backgroundColor: 'rgba(0, 230, 118, 0.1)', // Зеленое свечение
   },
   rankContainer: {
     width: 40,
@@ -699,7 +708,7 @@ const styles = StyleSheet.create({
   recordRank: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#888',
+    color: '#aaaaaa', // Светлее
   },
   playerContainer: {
     flex: 1.5,
@@ -712,7 +721,7 @@ const styles = StyleSheet.create({
   },
   youLabel: {
     fontSize: 10,
-    color: '#4CAF50',
+    color: '#00e676', // Неоновый зеленый
     fontWeight: 'bold',
     marginTop: 2,
   },
@@ -720,7 +729,7 @@ const styles = StyleSheet.create({
     width: 80,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#00ffff',
+    color: '#00ffff', // Акцент на очках
     textAlign: 'center',
   },
   recordLines: {
@@ -738,13 +747,13 @@ const styles = StyleSheet.create({
   recordTime: {
     width: 60,
     fontSize: 12,
-    color: '#cccccc',
+    color: '#aaaaaa', // Светлее
     textAlign: 'center',
   },
   recordDate: {
     width: 80,
     fontSize: 12,
-    color: '#888',
+    color: '#aaaaaa', // Светлее
     textAlign: 'center',
   },
 });

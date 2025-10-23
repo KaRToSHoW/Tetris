@@ -1,5 +1,7 @@
+// -*- coding: utf-8 -*-
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Dimensions, ActivityIndicator } from 'react-native';
+// Предполагается, что 'expo-video' и 'expo-blur' установлены.
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { BlurView } from 'expo-blur';
 import AnimatedGradientBackground from '../../assets/videos/AnimatedGradientBackground';
@@ -28,11 +30,13 @@ export default function VideoBackground({
       player.loop = true;
       player.muted = true;
       player.volume = 0;
+      // Воспроизводим сразу, как только компонент смонтирован
+      player.play(); 
     }
   );
 
   useEffect(() => {
-    // Таймер для автоматического переключения на fallback
+    // 1. Таймер для автоматического переключения на резервный фон (fallback)
     const fallbackTimer = setTimeout(() => {
       if (!isVideoReady) {
         console.warn('Video loading timeout, switching to gradient background');
@@ -41,7 +45,7 @@ export default function VideoBackground({
       }
     }, 5000); // 5 секунд на загрузку
 
-    // Слушаем изменения статуса
+    // 2. Слушаем изменения статуса видеоплеера
     const subscription = player.addListener('statusChange', ({ status, error }) => {
       console.log('Video status:', status);
       
@@ -55,7 +59,7 @@ export default function VideoBackground({
         setIsVideoReady(true);
         setIsLoading(false);
         clearTimeout(fallbackTimer);
-        player.play();
+        // player.play() вызывается при создании плеера, здесь можно не дублировать
       } else if (status === 'loading') {
         setIsLoading(true);
       }
@@ -67,7 +71,7 @@ export default function VideoBackground({
     };
   }, [player, isVideoReady]);
 
-  // Если есть ошибка загрузки видео, используем анимированный градиент
+  // Если есть ошибка загрузки видео, используем анимированный градиент и возвращаем контент
   if (hasVideoError) {
     return (
       <AnimatedGradientBackground blurIntensity={blurIntensity}>
@@ -78,50 +82,50 @@ export default function VideoBackground({
 
   return (
     <View style={styles.container}>
-      {/* Показываем градиент пока видео загружается */}
+      
+      {/* 1. ФОН (Градиент + Индикатор загрузки) — видим, пока видео не готово */}
       {(!isVideoReady || isLoading) && (
         <View style={StyleSheet.absoluteFill}>
           <AnimatedGradientBackground blurIntensity={blurIntensity}>
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#00ffff" />
+              {/* Показываем индикатор, если еще идет загрузка */}
+              {isLoading && <ActivityIndicator size="large" color="#00ffff" />}
             </View>
           </AnimatedGradientBackground>
         </View>
       )}
       
-      {/* Фоновое видео */}
+      {/* 2. ВИДЕО — показываем всегда, но делаем видимым только когда готово (opacity) */}
       <VideoView
         player={player}
         style={[
           styles.video,
+          // Плавное появление видео при готовности
           { opacity: isVideoReady && !isLoading ? 1 : 0 }
         ]}
         contentFit="cover"
         nativeControls={false}
-        allowsFullscreen={false}
+        // ИСПРАВЛЕНИЕ: Замена deprecated allowsFullscreen на fullscreenOptions
+        fullscreenOptions={{ preventAutomaticFullscreen: true }}
         allowsPictureInPicture={false}
       />
       
-      {/* Слой блюра поверх видео */}
+      {/* 3. СЛОЙ БЛЮРА — только поверх видео */}
       {isVideoReady && !isLoading && (
         <BlurView 
           intensity={blurIntensity} 
           style={styles.blurContainer}
           tint="dark"
         >
+          {/* Дополнительный затемняющий оверлей */}
           <View style={styles.overlay} />
-          <View style={styles.contentContainer}>
-            {children}
-          </View>
         </BlurView>
       )}
 
-      {/* Контент показываем всегда */}
-      {(!isVideoReady || isLoading) && (
-        <View style={styles.contentContainer}>
-          {children}
-        </View>
-      )}
+      {/* 4. КОНТЕНТ (CHILDREN) — всегда поверх всех фоновых элементов */}
+      <View style={styles.contentContainer}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -129,32 +133,30 @@ export default function VideoBackground({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
-    height: '100%',
   },
   video: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
+    // Используем абсолютное позиционирование для фона
+    ...StyleSheet.absoluteFillObject,
     width: width,
     height: height,
   },
   blurContainer: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
+    // Блюр должен покрывать весь экран поверх видео
+    ...StyleSheet.absoluteFillObject,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
+    // Полупрозрачный черный оверлей для лучшей читаемости
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   contentContainer: {
+    // Контейнер контента должен быть поверх всего и растянут на весь экран
+    ...StyleSheet.absoluteFillObject,
     flex: 1,
   },
   loadingContainer: {
-    flex: 1,
+    // Контейнер для индикатора загрузки должен быть по размеру AnimatedGradientBackground
+    ...StyleSheet.absoluteFillObject, 
     justifyContent: 'center',
     alignItems: 'center',
   },

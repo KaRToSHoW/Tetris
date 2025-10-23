@@ -133,102 +133,120 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
     </VideoBackground>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
+    // Добавим немного отступов сверху и снизу, чтобы меню не "прилипало"
+    // к краям при некоторых разрешениях
+    paddingVertical: 40, 
   },
   header: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 50, // Немного уменьшил отступ
   },
   title: {
-    fontSize: 48,
+    fontSize: 64, // Крупнее
     fontWeight: 'bold',
-    color: '#00ffff',
+    color: '#00ffff', // Яркий циан
     textAlign: 'center',
-    textShadowColor: '#00ffff50',
+    letterSpacing: 2, // Небольшой разнос букв
+    textShadowColor: 'rgba(0, 255, 255, 0.8)', // Более яркая тень
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
-    marginBottom: 10,
+    textShadowRadius: 25, // Более сильное "свечение"
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: '#888',
+    color: '#e0e0e0', // Светло-серый вместо тусклого
     textAlign: 'center',
+    fontWeight: '300', // Тонкое начертание
   },
   userWelcome: {
     fontSize: 16,
-    color: '#4CAF50',
+    color: '#00e676', // Более яркий "позитивный" зеленый
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 15,
+    fontWeight: '500',
   },
   menu: {
-    maxWidth: 400,
+    maxWidth: 450, // Чуть шире для планшетов
     alignSelf: 'center',
     width: '100%',
   },
   menuItem: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 15,
-    marginBottom: 15,
-    borderWidth: 2,
-    borderColor: '#333',
-    overflow: 'hidden',
+    // Темный, полупрозрачный фон с синим оттенком
+    backgroundColor: 'rgba(10, 10, 20, 0.75)', 
+    borderRadius: 12, // Чуть более скругленные углы
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.3)', // Полупрозрачная неоновая рамка
+    overflow: 'hidden', // Для ripple-эффекта
+    // Тень для "глубины"
+    shadowColor: '#00ffff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8, // Для Android
   },
   menuItemDisabled: {
-    backgroundColor: '#111',
-    borderColor: '#222',
+    backgroundColor: 'rgba(10, 10, 20, 0.4)', // Более прозрачный
+    borderColor: 'rgba(128, 128, 128, 0.2)', // Серая рамка
+    shadowOpacity: 0, // Убираем тень
+    elevation: 0,
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    // Сделаем паdding чуть поменьше по вертикали
+    paddingVertical: 18, 
+    paddingHorizontal: 20,
   },
   menuIconContainer: {
-    marginRight: 20,
-    minWidth: 40,
+    marginRight: 18,
+    minWidth: 30, // Убедимся, что иконка не "прыгает"
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuTextContainer: {
-    flex: 1,
+    flex: 1, // Занимает все оставшееся место
   },
   menuText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#ffffff', // Чистый белый
   },
   menuTextDisabled: {
-    color: '#666',
+    color: '#777', // Более контрастный серый
   },
   menuSubtitle: {
     fontSize: 14,
-    color: '#888',
+    color: '#aaa', // Светло-серый
     marginTop: 2,
   },
   menuArrow: {
     position: 'absolute',
     right: 20,
-    top: '50%',
-    transform: [{ translateY: -10 }],
+    // Улучшенный способ вертикального центрирования
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   footer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 30, // Немного поднимем
     left: 0,
     right: 0,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 12,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.5)', // Полупрозрачный белый
     marginBottom: 5,
   },
   versionText: {
     fontSize: 10,
-    color: '#444',
+    color: 'rgba(255, 255, 255, 0.3)', // Еще более прозрачный
   },
 });

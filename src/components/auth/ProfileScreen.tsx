@@ -320,11 +320,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0D0D12', // Глубокий черный
   },
   centered: {
     justifyContent: 'center',
@@ -339,45 +338,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
+    backgroundColor: '#0D0D12', // Фон для гостя
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 40, // Больше отступ
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4CAF50',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#00ffff', // Неоновый голубой фон
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
+    // Легкое свечение
+    shadowColor: '#00ffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#000000', // Черный текст на неоновом фоне
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#00ffff', // Неоновый голубой
     marginBottom: 10,
+    textShadowColor: 'rgba(0, 255, 255, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   username: {
-    fontSize: 24,
+    fontSize: 26,
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
-    color: '#cccccc',
-    marginBottom: 5,
+    color: '#aaaaaa', // Светло-серый
+    marginBottom: 10,
   },
   memberSince: {
     fontSize: 14,
-    color: '#4CAF50',
+    color: '#00e676', // Неоновый зеленый
+    fontWeight: '600',
   },
   guestText: {
     fontSize: 18,
@@ -392,50 +402,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorText: {
-    fontSize: 16,
-    color: '#ff4444',
+    fontSize: 18,
+    color: '#ff4174', // Неоновый красный/розовый
     textAlign: 'center',
     marginBottom: 20,
     paddingHorizontal: 20,
+    fontWeight: '600',
   },
   retryButton: {
-    backgroundColor: '#ff6b35',
-    marginBottom: 10,
+    backgroundColor: '#ff9800', // Оранжевый
+    marginBottom: 15,
   },
   quickStatsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 30,
+    marginHorizontal: -5,
   },
-  quickStatCard: {
-    flex: 1,
-    backgroundColor: '#2a2a4a',
+  // Элементы в стиле "Glassmorphism" с неоновыми рамками
+  cardBase: {
+    backgroundColor: 'rgba(10, 10, 20, 0.75)', // Темный полупрозрачный фон
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
-    marginHorizontal: 5,
     borderWidth: 1,
-    borderColor: '#3a3a5a',
+    borderColor: 'rgba(0, 255, 255, 0.3)', // Неоновая рамка
+  },
+  quickStatCard: {
+    flex: 1,
+    marginHorizontal: 5,
   },
   quickStatValue: {
-    fontSize: 20,
+    fontSize: 24, // Крупнее
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#00e676', // Неоновый зеленый
     marginBottom: 5,
   },
   quickStatLabel: {
     fontSize: 12,
-    color: '#cccccc',
+    color: '#aaaaaa',
     textAlign: 'center',
+    fontWeight: '600',
   },
   statsContainer: {
     marginBottom: 30,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#00ffff',
     marginBottom: 15,
+    borderLeftWidth: 4, // Неоновая линия слева
+    borderLeftColor: '#00ffff',
+    paddingLeft: 10,
+    textShadowColor: 'rgba(0, 255, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -444,7 +466,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   viewAllText: {
-    color: '#4CAF50',
+    color: '#00e676', // Неоновый зеленый
     fontSize: 14,
     fontWeight: '600',
   },
@@ -455,36 +477,26 @@ const styles = StyleSheet.create({
   },
   statItem: {
     width: '48%',
-    backgroundColor: '#2a2a4a',
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
     marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#3a3a5a',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#00ffff', // Неоновый голубой
     marginBottom: 5,
   },
   statLabel: {
     fontSize: 12,
     color: '#cccccc',
     textAlign: 'center',
+    fontWeight: '600',
   },
   recordsContainer: {
     marginBottom: 30,
   },
   recordItem: {
     flexDirection: 'row',
-    backgroundColor: '#2a2a4a',
-    borderRadius: 12,
-    padding: 15,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#3a3a5a',
   },
   recordRank: {
     width: 30,
@@ -493,15 +505,15 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   recordRankText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#00e676',
   },
   recordInfo: {
     flex: 1,
   },
   recordScore: {
-    fontSize: 18,
+    fontSize: 20, // Крупнее
     fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 2,
@@ -513,26 +525,33 @@ const styles = StyleSheet.create({
   },
   recordDate: {
     fontSize: 12,
-    color: '#888',
+    color: '#aaaaaa',
   },
   buttonsContainer: {
     gap: 15,
+    marginTop: 10,
   },
   button: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#3a3a5a', // Темный фон для кнопок
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.4)',
   },
   playButton: {
-    backgroundColor: '#2196F3',
-  },
-  signOutButton: {
-    backgroundColor: '#ff4444',
+    backgroundColor: '#00ffff', // Неоновый голубой
+    borderColor: '#00ffff',
+    // Неоновое свечение для кнопки
+    shadowColor: '#00ffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 15,
+    elevation: 8,
   },
   buttonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#000000', // Черный текст на неоновом фоне
   },
 });
