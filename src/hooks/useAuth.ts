@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, AuthState, UserProfile, signUp, signIn, signOut, resetPassword, getCurrentUser } from '../lib/supabase.ts';
+import { supabase, AuthState, UserProfile, signUp, signIn, signOut, resetPassword, getCurrentUser } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
 export function useAuth() {
@@ -93,9 +93,9 @@ export function useAuth() {
       
       const result = await signUp(email, password, username);
       
-      if (result.user) {
+      if (result.data?.user) {
         // Если пользователь создан, но нужно подтвердить email
-        if (!result.session) {
+        if (!result.data?.session) {
           setAuthState(prev => ({ 
             ...prev, 
             isLoading: false, 

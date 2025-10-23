@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { GameService } from '../services/gameService';
-import { GameRecord, GameSettings, PlayerStats } from '../lib/supabase.ts';
+import { GameRecord, Game_Settings, PlayerStats } from '../lib/supabase';
 
 /**
  * Хук для управления игровыми рекордами
@@ -106,7 +106,7 @@ export function useGameRecords(playerName?: string) {
  * Демонстрирует управление пользовательскими ресурсами
  */
 export function usePlayerSettings(playerName: string) {
-  const [settings, setSettings] = useState<GameSettings | null>(null);
+  const [settings, setSettings] = useState<Game_Settings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -133,7 +133,7 @@ export function usePlayerSettings(playerName: string) {
   }, [playerName]);
 
   // Функция для обновления настроек локально
-  const updateSettings = useCallback((newSettings: Partial<GameSettings>) => {
+  const updateSettings = useCallback((newSettings: Partial<Game_Settings>) => {
     setSettings(prev => {
       if (!prev) return null;
       const updated = { ...prev, ...newSettings };

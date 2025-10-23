@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import Icon, { ICON_COLORS } from './Icon';
 import { useAuth } from '../contexts/AuthContext';
 import type { Screen } from '../types/app';
+import VideoBackground from './VideoBackground';
 
 interface MainMenuProps {
   onNavigate: (screen: Screen) => void;
@@ -76,8 +77,9 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <VideoBackground blurIntensity={60}>
+      <View style={styles.container}>
+        <View style={styles.header}>
         <Text style={styles.title}>ТЕТРИС</Text>
         <Text style={styles.subtitle}>Классическая игра</Text>
         {session?.user && (
@@ -127,14 +129,14 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
         <Text style={styles.footerText}>© 2024 Tetris Game</Text>
         <Text style={styles.versionText}>v1.0.0</Text>
       </View>
-    </View>
+      </View>
+    </VideoBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
