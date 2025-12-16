@@ -18,7 +18,7 @@ import type { Screen, HighScore } from './src/types/app';
 
 function AppContent() {
   const [appState, appDispatch] = useReducer(appReducer, undefined, createInitialAppState);
-  const { session, user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   const handleNavigate = (screen: Screen) => {
     appDispatch({ type: 'NAVIGATE_TO', screen });
@@ -38,15 +38,15 @@ function AppContent() {
     appDispatch({ type: 'ADD_HIGH_SCORE', score: newHighScore });
     
     // Save to Supabase if user is logged in
-    if (session?.user) {
+    if (user?.id) {
       try {
         // Calculate time played (you might want to track this properly)
         const timePlayed = Math.floor(Math.random() * 300) + 60; // Temporary placeholder
         
         // Save game record
         await saveGameRecord({
-          user_id: session.user.id,
-          player_name: user?.display_name || user?.username || session.user.email || 'Player',
+          user_id: user.id,
+          player_name: user?.display_name || user?.username || user?.email || 'Player',
           score,
           level,
           lines_cleared: lines,
@@ -54,7 +54,7 @@ function AppContent() {
         });
         
         // Update player stats (this is a simplified version - in reality you'd want to fetch current stats first)
-        await updatePlayerStats(session.user.id, {
+        await updatePlayerStats(user.id, {
           total_games: 1,
           total_score: score,
           best_score: score,

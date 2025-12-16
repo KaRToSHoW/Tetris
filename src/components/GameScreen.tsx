@@ -4,6 +4,7 @@ import { BOARD_COLS, BOARD_ROWS, TETROMINOES } from '../game/constants';
 import { createInitialState, getTickMs, reducer } from '../game/reducer';
 import Icon, { ICON_COLORS } from './Icon';
 import TouchGameBoard from './TouchGameBoard';
+import { THEME } from '../styles/theme';
 import type { GameSettings, Screen } from '../types/app';
 
 interface GameScreenProps {
@@ -113,21 +114,38 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Bar with Pause (left) and Level (center) */}
-      <View style={styles.topBar}>
-        <Pressable style={styles.pauseButton} onPress={() => dispatch({ type: 'PAUSE_TOGGLE' })}>
+      {/* Header with Menu Button */}
+      <View style={styles.header}>
+        <Pressable 
+          style={styles.menuButton} 
+          onPress={() => {
+            (async () => {
+              try {
+                const sm = await import('../sounds/soundManager');
+                sm.playSound('click');
+              } catch(e){}
+            })();
+            onNavigate('menu');
+          }}
+        >
+          <Icon name="home" size={18} color={THEME.colors.primary} />
+          <Text style={styles.menuButtonText}>Меню</Text>
+        </Pressable>
+        
+        <View style={styles.headerCenter}>
+          <Text style={styles.levelText}>Уровень {state.level}</Text>
+        </View>
+
+        <Pressable 
+          style={styles.pauseButton} 
+          onPress={() => dispatch({ type: 'PAUSE_TOGGLE' })}
+        >
           <Icon 
             name={state.isPaused ? 'play' : 'pause'} 
             size={18} 
-            color={ICON_COLORS.primary} 
+            color={THEME.colors.primary} 
           />
         </Pressable>
-        
-        <View style={styles.topCenterInfo}>
-          <Text style={styles.levelText}>Уровень {state.level}</Text>
-        </View>
-        
-        <View style={styles.spacer} />
       </View>
 
       {/* Game Info */}
@@ -142,29 +160,9 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
         </View>
       </View>
 
-      {/* Main Game Area */}
+      {/* Main Game Area - Optimized for mobile */}
       <View style={styles.gameArea}>
-        {/* Next Piece Preview */}
-        <View style={styles.nextPieceContainer}>
-          <Text style={styles.nextPieceLabel}>Следующая</Text>
-          <View style={styles.nextPieceGrid}>
-            {nextPieceGrid.map((row, rIdx) => (
-              <View key={rIdx} style={styles.nextPieceRow}>
-                {row.map((cell, cIdx) => (
-                  <View 
-                    key={cIdx} 
-                    style={[
-                      styles.nextPieceCell, 
-                      cell > 0 && (styles as any)[`cell${cell}`]
-                    ]} 
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Game Board */}
+        {/* Game Board - Takes more space */}
         {settings.controlMode === 'swipes' ? (
           <TouchGameBoard
             style={styles.board}
@@ -205,57 +203,110 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
             ))}
           </View>
         )}
+
+        {/* Next Piece Preview - Beside board */}
+        <View style={styles.nextPieceContainer}>
+          <Text style={styles.nextPieceLabel}>Следующая</Text>
+          <View style={styles.nextPieceGrid}>
+            {nextPieceGrid.map((row, rIdx) => (
+              <View key={rIdx} style={styles.nextPieceRow}>
+                {row.map((cell, cIdx) => (
+                  <View 
+                    key={cIdx} 
+                    style={[
+                      styles.nextPieceCell, 
+                      cell > 0 && (styles as any)[`cell${cell}`]
+                    ]} 
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
 
-      {/* Game Controls or Instructions */}
+      {/* Game Controls - AMPRTOK Layout */}
       {settings.controlMode === 'buttons' ? (
-        <View style={styles.controls}>
-          {/* Top Row - Movement */}
-          <View style={styles.controlRow}>
+        <View style={styles.controlsContainer}>
+          {/* Top Row - Fast Drop Button */}
+          <View style={styles.topControlRow}>
+            <View style={styles.spacerLeft} />
             <Pressable 
-              style={[styles.btn, styles.moveBtn]} 
-              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })(); dispatch({ type: 'MOVE', dir: 'left' }); }}
+              style={[styles.btn, styles.fastDropBtn]} 
+              onPress={() => {
+                (async () => {
+                  try {
+                    const sm = await import('../sounds/soundManager');
+                    sm.playSound('shift');
+                  } catch(e){}
+                })();
+                dispatch({ type: 'HARD_DROP' });
+              }}
             >
-              <Icon name="left" size={24} color={ICON_COLORS.secondary} />
-              <Text style={styles.btnLabel}>Лево</Text>
+              <Icon name="drop" size={24} color={THEME.colors.warning} />
             </Pressable>
-            
-            <Pressable 
-              style={[styles.btn, styles.moveBtn]} 
-              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })(); dispatch({ type: 'MOVE', dir: 'right' }); }}
-            >
-              <Icon name="right" size={24} color={ICON_COLORS.secondary} />
-              <Text style={styles.btnLabel}>Право</Text>
-            </Pressable>
+            <View style={styles.spacerRight} />
           </View>
-          
-          {/* Middle Row - Actions */}
-          <View style={styles.controlRow}>
+
+          {/* Bottom Row - Movement + Rotation */}
+          <View style={styles.bottomControlRow}>
+            {/* Left side - Movement buttons (3 buttons) */}
+            <View style={styles.movementGroup}>
+              {/* Left button */}
+              <Pressable 
+                style={[styles.btn, styles.moveBtn, styles.leftBtn]} 
+                onPress={() => {
+                  (async () => {
+                    try {
+                      const sm = await import('../sounds/soundManager');
+                      sm.playSound('shift');
+                    } catch(e){}
+                  })();
+                  dispatch({ type: 'MOVE', dir: 'left' });
+                }}
+              >
+                <Icon name="left" size={24} color={THEME.colors.success} />
+              </Pressable>
+              
+              {/* Down button */}
+              <Pressable 
+                style={[styles.btn, styles.moveBtn, styles.downBtn]} 
+                onPress={() => {
+                  (async () => {
+                    try {
+                      const sm = await import('../sounds/soundManager');
+                      sm.playSound('down');
+                    } catch(e){}
+                  })();
+                  dispatch({ type: 'MOVE', dir: 'down' });
+                }}
+              >
+                <Icon name="down" size={24} color={THEME.colors.primary} />
+              </Pressable>
+              
+              {/* Right button */}
+              <Pressable 
+                style={[styles.btn, styles.moveBtn, styles.rightBtn]} 
+                onPress={() => {
+                  (async () => {
+                    try {
+                      const sm = await import('../sounds/soundManager');
+                      sm.playSound('shift');
+                    } catch(e){}
+                  })();
+                  dispatch({ type: 'MOVE', dir: 'right' });
+                }}
+              >
+                <Icon name="right" size={24} color={THEME.colors.success} />
+              </Pressable>
+            </View>
+
+            {/* Right side - Rotation button (large circle) */}
             <Pressable 
               style={[styles.btn, styles.rotateBtn]} 
               onPress={() => dispatch({ type: 'ROTATE', dir: 1 })}
             >
-              <Icon name="rotate" size={24} color={ICON_COLORS.secondary} />
-              <Text style={styles.btnLabel}>Поворот</Text>
-            </Pressable>
-            
-            <Pressable 
-              style={[styles.btn, styles.downBtn]} 
-              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('down'); } catch(e){} })(); dispatch({ type: 'MOVE', dir: 'down' }); }}
-            >
-              <Icon name="down" size={24} color={ICON_COLORS.secondary} />
-              <Text style={styles.btnLabel}>Вниз</Text>
-            </Pressable>
-          </View>
-          
-          {/* Bottom Row - Drop */}
-          <View style={styles.controlRow}>
-            <Pressable 
-              style={[styles.btn, styles.dropBtn]} 
-              onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('shift'); } catch(e){} })(); dispatch({ type: 'HARD_DROP' }); }}
-            >
-              <Icon name="drop" size={28} color={ICON_COLORS.secondary} />
-              <Text style={styles.btnLabel}>Сброс</Text>
+              <Icon name="rotate" size={28} color={THEME.colors.secondary} />
             </Pressable>
           </View>
         </View>
@@ -268,18 +319,6 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
           <Text style={styles.instructionsText}>• Двойное касание: сброс</Text>
         </View>
       )}
-
-      {/* Bottom Toolbar */}
-      <View style={styles.bottomToolbar}>
-  <Pressable style={styles.toolbarBtn} onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); onNavigate('menu'); }}>
-          <Icon name="home" size={14} color={ICON_COLORS.secondary} style={{ marginRight: 8 }} />
-          <Text style={styles.toolbarBtnText}>Меню</Text>
-        </Pressable>
-  <Pressable style={styles.toolbarBtn} onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'RESTART' }); }}>
-          <Icon name="restart" size={14} color={ICON_COLORS.secondary} style={{ marginRight: 8 }} />
-          <Text style={styles.toolbarBtnText}>Заново</Text>
-        </Pressable>
-      </View>
 
       {/* Pause Overlay */}
       {state.isPaused && (
@@ -296,13 +335,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
                 <Text style={styles.pauseMenuText}>Продолжить игру</Text>
               </Pressable>
               
-              <Pressable 
-                style={styles.pauseMenuItem} 
-                onPress={() => { (async () => { try { const sm = await import('../sounds/soundManager'); sm.playSound('click'); } catch(e){} })(); dispatch({ type: 'PAUSE_TOGGLE' }); onNavigate('settings'); }}
-              >
-                <Icon name="gear" size={18} color={ICON_COLORS.secondary} style={{ marginRight: 12 }} />
-                <Text style={styles.pauseMenuText}>Настройки</Text>
-              </Pressable>
+              {/* Settings removed from pause menu per design request */}
               
               <Pressable 
                 style={styles.pauseMenuItem} 
@@ -353,103 +386,123 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
   );
 }
 
-const CELL = 18;
+const CELL = 16;
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#0a0a0a', 
+    backgroundColor: THEME.colors.background, 
   },
-  topBar: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 15,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: 'rgba(0, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.background,
+  },
+  menuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.md,
+    minWidth: 64,
+    justifyContent: 'center',
+  },
+  menuButtonText: {
+    color: THEME.colors.primary,
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: THEME.spacing.xs,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  levelText: {
+    color: THEME.colors.primary,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   pauseButton: {
-    backgroundColor: '#1a1a1a',
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: THEME.colors.secondary,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
     minWidth: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topCenterInfo: {
-    alignItems: 'center',
-  },
-  levelText: {
-    color: '#00ffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  spacer: {
-    minWidth: 44,
-  },
   gameInfo: { 
     flexDirection: 'row', 
     justifyContent: 'space-around',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+    backgroundColor: THEME.colors.background,
   },
   infoBlock: {
     alignItems: 'center',
   },
   infoLabel: {
-    color: '#888',
-    fontSize: 14,
-    marginBottom: 5,
+    color: THEME.colors.disabled,
+    fontSize: 12,
+    marginBottom: THEME.spacing.xs,
   },
   infoValue: {
-    color: '#ffffff',
-    fontSize: 20,
+    color: THEME.colors.text,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   gameArea: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.md,
+    gap: THEME.spacing.md,
   },
   nextPieceContainer: {
-    marginRight: 20,
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   nextPieceLabel: {
-    color: '#888',
-    fontSize: 12,
-    marginBottom: 10,
+    color: THEME.colors.disabled,
+    fontSize: 11,
+    marginBottom: THEME.spacing.sm,
     textAlign: 'center',
   },
   nextPieceGrid: {
-    backgroundColor: '#111',
-    padding: 8,
-    borderRadius: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.md,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(0, 255, 255, 0.3)',
   },
   nextPieceRow: {
     flexDirection: 'row',
   },
   nextPieceCell: {
-    width: CELL * 0.8,
-    height: CELL * 0.8,
-    backgroundColor: '#1b1b1b',
-    margin: 0.5,
+    width: CELL * 0.7,
+    height: CELL * 0.7,
+    backgroundColor: THEME.colors.background,
+    margin: 1,
     borderRadius: 2,
   },
   board: { 
-    backgroundColor: '#111', 
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
     padding: 4, 
-    borderRadius: 6,
+    borderRadius: THEME.borderRadius.md,
     borderWidth: 2,
-    borderColor: '#333',
+    borderColor: THEME.colors.primary,
+    flex: 1,
   },
   row: { 
     flexDirection: 'row' 
@@ -457,116 +510,146 @@ const styles = StyleSheet.create({
   cell: { 
     width: CELL, 
     height: CELL, 
-    backgroundColor: '#1b1b1b', 
+    backgroundColor: THEME.colors.background, 
     margin: 1, 
     borderRadius: 2,
   },
   cellWithGrid: {
     borderWidth: 0.5,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  cell0: { backgroundColor: '#1b1b1b' },
-  cell1: { backgroundColor: '#00ffff' },
+  cell0: { backgroundColor: THEME.colors.background },
+  cell1: { backgroundColor: THEME.colors.primary },
   cell2: { backgroundColor: '#ffd500' },
-  cell3: { backgroundColor: '#aa00ff' },
-  cell4: { backgroundColor: '#00ff6a' },
-  cell5: { backgroundColor: '#ff004d' },
-  cell6: { backgroundColor: '#2266ff' },
-  cell7: { backgroundColor: '#ff8c00' },
+  cell3: { backgroundColor: THEME.colors.secondary },
+  cell4: { backgroundColor: THEME.colors.success },
+  cell5: { backgroundColor: THEME.colors.error },
+  cell6: { backgroundColor: THEME.colors.info },
+  cell7: { backgroundColor: THEME.colors.warning },
   controls: { 
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    marginBottom: 20,
-  },
-  controlRow: {
-    flexDirection: 'row', 
-    columnGap: 12, 
-    marginBottom: 12,
-    justifyContent: 'center',
-  },
-  btn: { 
-    backgroundColor: '#1a1a1a', 
-    paddingHorizontal: 16, 
-    paddingVertical: 12, 
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#333',
-    minWidth: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  moveBtn: {
-    backgroundColor: '#2a4d3a',
-    borderColor: '#00ff6a',
-  },
-  rotateBtn: {
-    backgroundColor: '#4d2a4d',
-    borderColor: '#aa00ff',
-  },
-  downBtn: {
-    backgroundColor: '#2a4d4d',
-    borderColor: '#00ffff',
-  },
-  dropBtn: {
-    backgroundColor: '#4d3a2a',
-    borderColor: '#ff8c00',
-    minWidth: 120,
-    paddingVertical: 16,
-  },
-  btnLabel: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  instructionsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#1a1a1a',
-    marginHorizontal: 20,
-    marginBottom: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-  },
-  instructionsTitle: {
-    color: '#00ffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  instructionsText: {
-    color: '#ffffff',
-    fontSize: 14,
-    marginBottom: 5,
-    lineHeight: 20,
-  },
-  bottomToolbar: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  toolbarBtn: { 
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#333', 
-    paddingHorizontal: 20, 
-    paddingVertical: 12, 
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#555',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+    backgroundColor: THEME.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 255, 255, 0.2)',
   },
-  toolbarBtnText: { 
-    color: 'white', 
+  controlsContainer: {
+    backgroundColor: THEME.colors.background,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 255, 255, 0.2)',
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.lg,
+    gap: THEME.spacing.lg,
+  },
+  topControlRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 80,
+  },
+  bottomControlRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 80,
+  },
+  spacerLeft: {
+    flex: 1,
+  },
+  spacerRight: {
+    flex: 1,
+  },
+  movementGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    flex: 1,
+  },
+  leftControls: {
+    flexDirection: 'column',
+    gap: THEME.spacing.sm,
+  },
+  rightControls: {
+    flexDirection: 'column',
+    gap: THEME.spacing.sm,
+  },
+  btn: { 
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 50,
+    minHeight: 50,
+    width: 56,
+    height: 56,
+  },
+  moveBtn: {
+    backgroundColor: 'rgba(0, 255, 106, 0.1)',
+    borderColor: THEME.colors.success,
+    width: 56,
+    height: 56,
+  },
+  leftBtn: {
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  downBtn: {
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    borderColor: THEME.colors.primary,
+    width: 60,
+    height: 60,
+    marginHorizontal: -1,
+  },
+  rightBtn: {
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
+  rotateBtn: {
+    backgroundColor: 'rgba(170, 0, 255, 0.1)',
+    borderColor: THEME.colors.secondary,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  fastDropBtn: {
+    backgroundColor: 'rgba(255, 140, 0, 0.1)',
+    borderColor: THEME.colors.warning,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  dropBtn: {
+    backgroundColor: 'rgba(255, 140, 0, 0.1)',
+    borderColor: THEME.colors.warning,
+  },
+  instructionsContainer: {
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
+    backgroundColor: THEME.colors.surface,
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.2)',
+  },
+  instructionsTitle: {
+    color: THEME.colors.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: THEME.spacing.sm,
+  },
+  instructionsText: {
+    color: THEME.colors.text,
+    fontSize: 12,
+    marginBottom: THEME.spacing.xs,
+    lineHeight: 18,
   },
   overlay: { 
     position: 'absolute', 
@@ -576,93 +659,93 @@ const styles = StyleSheet.create({
     bottom: 0, 
     alignItems: 'center', 
     justifyContent: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
   },
   pauseOverlay: {
-    backgroundColor: '#1a1a1a',
-    padding: 30,
-    borderRadius: 15,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.xl,
+    borderRadius: THEME.borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#00ffff',
+    borderColor: THEME.colors.primary,
     alignItems: 'center',
   },
   pauseTitle: { 
-    color: '#00ffff', 
+    color: THEME.colors.primary, 
     fontSize: 32, 
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.md,
   },
   pauseSubtitle: {
-    color: '#888',
+    color: THEME.colors.disabled,
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   pauseMenuContainer: {
-    marginVertical: 25,
+    marginVertical: THEME.spacing.xl,
     width: '100%',
   },
   pauseMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.lg,
+    marginBottom: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   resumeBtn: {
-    backgroundColor: '#00ffff20',
-    borderColor: '#00ffff',
+    backgroundColor: 'rgba(0, 255, 255, 0.15)',
+    borderColor: THEME.colors.primary,
   },
   pauseMenuText: {
-    color: '#ffffff',
+    color: THEME.colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
   gameOverOverlay: {
-    backgroundColor: '#1a1a1a',
-    padding: 30,
-    borderRadius: 15,
+    backgroundColor: THEME.colors.surface,
+    padding: THEME.spacing.xl,
+    borderRadius: THEME.borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#ff4444',
+    borderColor: THEME.colors.error,
     alignItems: 'center',
     maxWidth: '90%',
   },
   gameOverTitle: { 
-    color: '#ff4444', 
+    color: THEME.colors.error, 
     fontSize: 28, 
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   finalStats: {
-    marginBottom: 25,
+    marginBottom: THEME.spacing.xl,
     alignItems: 'center',
   },
   finalStatText: {
-    color: '#ffffff',
+    color: THEME.colors.text,
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: THEME.spacing.sm,
   },
   gameOverButtons: {
     flexDirection: 'row',
-    columnGap: 15,
+    columnGap: THEME.spacing.md,
   },
   gameOverBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00ffff',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
   },
   menuBtn: {
-    backgroundColor: '#666',
+    backgroundColor: THEME.colors.disabled,
   },
   gameOverBtnText: {
-    color: '#000',
+    color: THEME.colors.background,
     fontSize: 14,
     fontWeight: 'bold',
   },

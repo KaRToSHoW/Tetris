@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -29,6 +29,11 @@
     },
     "plugins": [
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "91d3345a-d914-4333-b219-1b719e915b45"
+      }
+    }
   }
 }

@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import Icon, { ICON_COLORS } from './Icon';
 import { useAuth } from '../contexts/AuthContext';
+import { THEME } from '../styles/theme';
 import type { Screen } from '../types/app';
-import VideoBackground from './VideoBackground';
 
 interface MainMenuProps {
   onNavigate: (screen: Screen) => void;
@@ -20,7 +20,7 @@ interface MenuItem {
 const { width, height } = Dimensions.get('window');
 
 export default function MainMenu({ onNavigate }: MainMenuProps) {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   // play menu music
   useEffect(() => {
     let mounted = true;
@@ -53,7 +53,7 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
       { key: 'settings', label: 'Настройки', icon: 'gear', disabled: false },
     ];
 
-    const authItem = session?.user 
+    const authItem = user 
       ? { key: 'profile', label: 'Профиль', icon: 'user', disabled: false }
       : { key: 'login', label: 'Вход / Регистрация', icon: 'login', disabled: false };
 
@@ -77,14 +77,13 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
   };
 
   return (
-    <VideoBackground blurIntensity={60}>
-      <View style={styles.container}>
-        <View style={styles.header}>
+    <View style={styles.container}>
+      <View style={styles.header}>
         <Text style={styles.title}>ТЕТРИС</Text>
         <Text style={styles.subtitle}>Классическая игра</Text>
-        {session?.user && (
+        {user && (
           <Text style={styles.userWelcome}>
-            Добро пожаловать, {user?.display_name || user?.username || session.user.email}!
+            Добро пожаловать, {user?.display_name || user?.username || user?.email}!
           </Text>
         )}
       </View>
@@ -129,124 +128,106 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
         <Text style={styles.footerText}>© 2024 Tetris Game</Text>
         <Text style={styles.versionText}>v1.0.0</Text>
       </View>
-      </View>
-    </VideoBackground>
+    </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: THEME.colors.background,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    // Добавим немного отступов сверху и снизу, чтобы меню не "прилипало"
-    // к краям при некоторых разрешениях
-    paddingVertical: 40, 
+    paddingHorizontal: THEME.spacing.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 50, // Немного уменьшил отступ
+    marginBottom: 60,
   },
   title: {
-    fontSize: 64, // Крупнее
+    fontSize: 48,
     fontWeight: 'bold',
-    color: '#00ffff', // Яркий циан
+    color: THEME.colors.primary,
     textAlign: 'center',
-    letterSpacing: 2, // Небольшой разнос букв
-    textShadowColor: 'rgba(0, 255, 255, 0.8)', // Более яркая тень
+    textShadowColor: 'rgba(0, 255, 255, 0.3)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 25, // Более сильное "свечение"
-    marginBottom: 8,
+    textShadowRadius: 20,
+    marginBottom: THEME.spacing.md,
   },
   subtitle: {
     fontSize: 18,
-    color: '#e0e0e0', // Светло-серый вместо тусклого
+    color: THEME.colors.disabled,
     textAlign: 'center',
-    fontWeight: '300', // Тонкое начертание
   },
   userWelcome: {
     fontSize: 16,
-    color: '#00e676', // Более яркий "позитивный" зеленый
+    color: THEME.colors.success,
     textAlign: 'center',
-    marginTop: 15,
-    fontWeight: '500',
+    marginTop: THEME.spacing.md,
   },
   menu: {
-    maxWidth: 450, // Чуть шире для планшетов
+    maxWidth: 400,
     alignSelf: 'center',
     width: '100%',
   },
   menuItem: {
-    // Темный, полупрозрачный фон с синим оттенком
-    backgroundColor: 'rgba(10, 10, 20, 0.75)', 
-    borderRadius: 12, // Чуть более скругленные углы
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)', // Полупрозрачная неоновая рамка
-    overflow: 'hidden', // Для ripple-эффекта
-    // Тень для "глубины"
-    shadowColor: '#00ffff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8, // Для Android
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.lg,
+    marginBottom: THEME.spacing.lg,
+    borderWidth: 2,
+    borderColor: THEME.colors.primary,
+    overflow: 'hidden',
   },
   menuItemDisabled: {
-    backgroundColor: 'rgba(10, 10, 20, 0.4)', // Более прозрачный
-    borderColor: 'rgba(128, 128, 128, 0.2)', // Серая рамка
-    shadowOpacity: 0, // Убираем тень
-    elevation: 0,
+    backgroundColor: THEME.colors.background,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    // Сделаем паdding чуть поменьше по вертикали
-    paddingVertical: 18, 
-    paddingHorizontal: 20,
+    padding: THEME.spacing.lg,
   },
   menuIconContainer: {
-    marginRight: 18,
-    minWidth: 30, // Убедимся, что иконка не "прыгает"
+    marginRight: THEME.spacing.lg,
+    minWidth: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuTextContainer: {
-    flex: 1, // Занимает все оставшееся место
+    flex: 1,
   },
   menuText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff', // Чистый белый
+    color: THEME.colors.text,
   },
   menuTextDisabled: {
-    color: '#777', // Более контрастный серый
+    color: THEME.colors.disabled,
   },
   menuSubtitle: {
     fontSize: 14,
-    color: '#aaa', // Светло-серый
-    marginTop: 2,
+    color: THEME.colors.disabled,
+    marginTop: THEME.spacing.xs,
   },
   menuArrow: {
     position: 'absolute',
-    right: 20,
-    // Улучшенный способ вертикального центрирования
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+    right: THEME.spacing.lg,
+    top: '50%',
+    transform: [{ translateY: -10 }],
   },
   footer: {
     position: 'absolute',
-    bottom: 30, // Немного поднимем
+    bottom: THEME.spacing.xl,
     left: 0,
     right: 0,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)', // Полупрозрачный белый
-    marginBottom: 5,
+    color: THEME.colors.disabled,
+    marginBottom: THEME.spacing.sm,
   },
   versionText: {
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.3)', // Еще более прозрачный
+    color: 'rgba(255, 255, 255, 0.2)',
   },
 });

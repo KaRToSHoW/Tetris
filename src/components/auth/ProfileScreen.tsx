@@ -8,9 +8,32 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Pressable,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { getPlayerStats, getUserRecords, PlayerStats, GameRecord } from '../../lib/supabase';
+import Icon from '../Icon';
+import { supabase } from '../../lib/supabase';
+import { THEME } from '../../styles/theme';
+
+interface PlayerStats {
+  total_games: number;
+  total_score: number;
+  best_score: number;
+  total_lines_cleared: number;
+  best_level_reached: number;
+  total_time_played: number;
+}
+
+interface GameRecord {
+  id: string;
+  user_id: string;
+  player_name: string;
+  score: number;
+  level: number;
+  lines_cleared: number;
+  time_played: number;
+  created_at: string;
+}
 
 interface ProfileScreenProps {
   onNavigateToGame: () => void;
@@ -21,58 +44,40 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onNavigateToGame,
   onNavigateToRecords,
 }) => {
-  const { user, session, signOut, isLoading: authLoading, refreshUserSession } = useAuth();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
   const [userRecords, setUserRecords] = useState<GameRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (session?.user) {
+    if (user?.id) {
       loadProfileData();
-    } else {
-      setIsLoading(false);
     }
-  }, [session]);
+  }, [user?.id]);
 
-  const loadProfileData = async (isRetry: boolean = false) => {
-    if (!session?.user) return;
-    
+  const loadProfileData = async () => {
+    if (!user?.id) return;
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Load player stats and records in parallel
-      const [statsResult, recordsResult] = await Promise.all([
-        getPlayerStats(session.user.id),
-        getUserRecords(session.user.id, 5), // Get top 5 user records
-      ]);
 
-      // Check for auth errors
-      const hasAuthError = (result: any) => {
-        return result.error && (result.error.includes('JWT') || result.error.includes('expired') || result.error.includes('401'));
-      };
+      // Load player stats
+      const { data: stats, error: statsError } = await supabase
+        .from('player_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      if (hasAuthError(statsResult) || hasAuthError(recordsResult)) {
-        if (!isRetry && retryCount < 2) {
-          setRetryCount(prev => prev + 1);
-          console.log('Auth error detected, refreshing session and retrying...');
-          await refreshUserSession();
-          setTimeout(() => loadProfileData(true), 1000);
-          return;
-        } else {
-          setError('Сессия истекла. Пожалуйста, войдите заново.');
-          return;
-        }
-      }
-
-      if (statsResult.error && !statsResult.error.includes('PGRST116')) {
-        console.log('Error loading stats:', statsResult.error);
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.error('Stats error:', statsError);
         setError('Ошибка загрузки статистики');
-      } else if (!statsResult.data) {
-        console.log('No player stats found, user is new');
+      } else if (stats) {
+        setPlayerStats(stats);
+      } else {
+        // No stats yet (new user)
         setPlayerStats({
           total_games: 0,
           total_score: 0,
@@ -81,21 +86,24 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           best_level_reached: 0,
           total_time_played: 0,
         });
-      } else {
-        setPlayerStats(statsResult.data);
       }
 
-      if (recordsResult.error && !recordsResult.error.includes('PGRST116')) {
-        console.log('Error loading records:', recordsResult.error);
+      // Load user records
+      const { data: records, error: recordsError } = await supabase
+        .from('records')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('score', { ascending: false })
+        .limit(5);
+
+      if (recordsError) {
+        console.error('Records error:', recordsError);
       } else {
-        setUserRecords(recordsResult.data || []);
+        setUserRecords(records || []);
       }
-      
-      // Success - reset retry count
-      setRetryCount(0);
-    } catch (error) {
-      console.error('Error loading profile data:', error);
-      setError('Не удалось загрузить данные профиля');
+    } catch (err) {
+      console.error('Error loading profile:', err);
+      setError('Не удалось загрузить профиль');
     } finally {
       setIsLoading(false);
     }
@@ -103,9 +111,32 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    setRetryCount(0); // Reset retry count on manual refresh
     await loadProfileData();
     setIsRefreshing(false);
+  };
+
+  const handleSignOut = () => {
+    Alert.alert('Выход', 'Выйти из аккаунта?', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Выйти',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsLoading(true);
+            await signOut();
+            // Navigate after signOut completes
+            setTimeout(() => {
+              onNavigateToGame();
+            }, 500);
+          } catch (e) {
+            console.error('Sign out error:', e);
+            setIsLoading(false);
+            Alert.alert('Ошибка', 'Не удалось выйти из аккаунта');
+          }
+        },
+      },
+    ]);
   };
 
   // Note: signOut is intentionally kept in the AuthContext but the button
@@ -143,7 +174,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   };
 
   // Экран для гостя
-  if (!session?.user) {
+  if (!user) {
     return (
       <View style={styles.container}>
         <View style={styles.guestContainer}>
@@ -167,7 +198,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   if (authLoading || isLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color={THEME.colors.success} />
         <Text style={styles.loadingText}>Загрузка профиля...</Text>
       </View>
     );
@@ -194,23 +225,34 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          colors={['#4CAF50']}
-          tintColor="#4CAF50"
+          colors={[THEME.colors.success]}
+          tintColor={THEME.colors.success}
         />
       }
     >
       <View style={styles.content}>
-        {/* Header */}
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <Pressable 
+            style={styles.backButton} 
+            onPress={onNavigateToGame}
+          >
+            <Icon name="left" size={18} color={THEME.colors.primary} />
+            <Text style={styles.backButtonText}>Назад</Text>
+          </Pressable>
+        </View>
+
+        {/* User Profile Header */}
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {(user?.display_name || user?.username || session.user.email || 'U')[0].toUpperCase()}
+              {(user?.display_name || user?.username || user?.email || 'U')[0].toUpperCase()}
             </Text>
           </View>
           <Text style={styles.username}>
             {user?.display_name || user?.username || 'Игрок'}
           </Text>
-          <Text style={styles.email}>{session.user.email}</Text>
+          <Text style={styles.email}>{user?.email}</Text>
           {playerStats && playerStats.total_games > 0 && (
             <Text style={styles.memberSince}>
               Игр сыграно: {playerStats.total_games}
@@ -314,159 +356,139 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Text style={styles.buttonText}>🏆 Все рекорды</Text>
           </TouchableOpacity>
           
-          {/* Sign-out action removed from UI per requirements. */}
+          <TouchableOpacity style={[styles.button, styles.signOutButton]} onPress={handleSignOut}>
+            <Text style={styles.buttonText}>🚪 Выйти</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D12', // Глубокий черный
+    backgroundColor: THEME.colors.background,
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   content: {
-    padding: 20,
+    padding: THEME.spacing.lg,
     paddingTop: 60,
   },
   guestContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 30,
-    backgroundColor: '#0D0D12', // Фон для гостя
+    padding: THEME.spacing.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40, // Больше отступ
+    marginBottom: THEME.spacing.lg,
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#00ffff', // Неоновый голубой фон
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: THEME.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
-    // Легкое свечение
-    shadowColor: '#00ffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
+    marginBottom: THEME.spacing.md,
   },
   avatarText: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#000000', // Черный текст на неоновом фоне
+    color: THEME.colors.background,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#00ffff', // Неоновый голубой
-    marginBottom: 10,
-    textShadowColor: 'rgba(0, 255, 255, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    color: THEME.colors.text,
+    marginBottom: THEME.spacing.sm,
   },
   username: {
-    fontSize: 26,
-    color: '#ffffff',
-    fontWeight: '700',
-    marginBottom: 5,
+    fontSize: 24,
+    color: THEME.colors.primary,
+    fontWeight: '600',
+    marginBottom: THEME.spacing.xs,
   },
   email: {
     fontSize: 16,
-    color: '#aaaaaa', // Светло-серый
-    marginBottom: 10,
+    color: THEME.colors.textSecondary,
+    marginBottom: THEME.spacing.xs,
   },
   memberSince: {
     fontSize: 14,
-    color: '#00e676', // Неоновый зеленый
-    fontWeight: '600',
+    color: THEME.colors.accent,
   },
   guestText: {
     fontSize: 18,
-    color: '#cccccc',
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: THEME.spacing.xl,
     lineHeight: 24,
   },
   loadingText: {
-    color: '#ffffff',
-    marginTop: 10,
+    color: THEME.colors.text,
+    marginTop: THEME.spacing.md,
     fontSize: 16,
   },
   errorText: {
-    fontSize: 18,
-    color: '#ff4174', // Неоновый красный/розовый
+    fontSize: 16,
+    color: THEME.colors.error,
     textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-    fontWeight: '600',
+    marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
   },
   retryButton: {
-    backgroundColor: '#ff9800', // Оранжевый
-    marginBottom: 15,
+    backgroundColor: THEME.colors.warning,
+    marginBottom: THEME.spacing.md,
   },
   quickStatsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
-    marginHorizontal: -5,
-  },
-  // Элементы в стиле "Glassmorphism" с неоновыми рамками
-  cardBase: {
-    backgroundColor: 'rgba(10, 10, 20, 0.75)', // Темный полупрозрачный фон
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)', // Неоновая рамка
+    marginBottom: THEME.spacing.xl,
   },
   quickStatCard: {
     flex: 1,
-    marginHorizontal: 5,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.md,
+    alignItems: 'center',
+    marginHorizontal: THEME.spacing.sm,
+    borderWidth: 1,
+    borderColor: THEME.colors.primary,
   },
   quickStatValue: {
-    fontSize: 24, // Крупнее
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#00e676', // Неоновый зеленый
-    marginBottom: 5,
+    color: THEME.colors.primary,
+    marginBottom: THEME.spacing.sm,
   },
   quickStatLabel: {
     fontSize: 12,
-    color: '#aaaaaa',
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
-    fontWeight: '600',
   },
   statsContainer: {
-    marginBottom: 30,
+    marginBottom: THEME.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#00ffff',
-    marginBottom: 15,
-    borderLeftWidth: 4, // Неоновая линия слева
-    borderLeftColor: '#00ffff',
-    paddingLeft: 10,
-    textShadowColor: 'rgba(0, 255, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
+    color: THEME.colors.text,
+    marginBottom: THEME.spacing.md,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: THEME.spacing.md,
   },
   viewAllText: {
-    color: '#00e676', // Неоновый зеленый
+    color: THEME.colors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -477,81 +499,113 @@ const styles = StyleSheet.create({
   },
   statItem: {
     width: '48%',
-    marginBottom: 15,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.md,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.primary,
   },
   statValue: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#00ffff', // Неоновый голубой
-    marginBottom: 5,
+    color: THEME.colors.primary,
+    marginBottom: THEME.spacing.sm,
   },
   statLabel: {
     fontSize: 12,
-    color: '#cccccc',
+    color: THEME.colors.textSecondary,
     textAlign: 'center',
-    fontWeight: '600',
   },
   recordsContainer: {
-    marginBottom: 30,
+    marginBottom: THEME.spacing.xl,
   },
   recordItem: {
     flexDirection: 'row',
-    marginBottom: 10,
+    backgroundColor: THEME.colors.surface,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.primary,
   },
   recordRank: {
     width: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 15,
+    marginRight: THEME.spacing.md,
   },
   recordRankText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#00e676',
+    color: THEME.colors.primary,
   },
   recordInfo: {
     flex: 1,
   },
   recordScore: {
-    fontSize: 20, // Крупнее
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 2,
+    color: THEME.colors.text,
+    marginBottom: THEME.spacing.xs,
   },
   recordDetails: {
     fontSize: 14,
-    color: '#cccccc',
-    marginBottom: 2,
+    color: THEME.colors.textSecondary,
+    marginBottom: THEME.spacing.xs,
   },
   recordDate: {
     fontSize: 12,
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
   },
   buttonsContainer: {
-    gap: 15,
-    marginTop: 10,
+    gap: THEME.spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: THEME.spacing.lg,
   },
   button: {
-    backgroundColor: '#3a3a5a', // Темный фон для кнопок
-    borderRadius: 12,
-    padding: 18,
+    backgroundColor: THEME.colors.primary,
+    borderRadius: THEME.borderRadius.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.4)',
+    minWidth: 100,
   },
   playButton: {
-    backgroundColor: '#00ffff', // Неоновый голубой
-    borderColor: '#00ffff',
-    // Неоновое свечение для кнопки
-    shadowColor: '#00ffff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-    elevation: 8,
+    backgroundColor: THEME.colors.success,
+  },
+  signOutButton: {
+    backgroundColor: THEME.colors.error,
+  },
+  viewRecordsButton: {
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.primary,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000', // Черный текст на неоновом фоне
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.colors.background,
+  },
+
+  /* Header / Back button */
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.sm,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: THEME.spacing.xs,
+    marginRight: THEME.spacing.md,
+  },
+  backButtonText: {
+    color: THEME.colors.primary,
+    marginLeft: THEME.spacing.xs,
+    fontWeight: '600',
   },
 });

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Switch, ScrollView, Alert, ActivityI
 import Icon, { ICON_COLORS } from './Icon';
 import { useAuth } from '../contexts/AuthContext';
 import { getGameSettings, saveGameSettings, Game_Settings } from '../lib/supabase';
+import { THEME } from '../styles/theme';
 import type { GameSettings, Screen } from '../types/app';
 
 interface SettingsScreenProps {
@@ -12,23 +13,22 @@ interface SettingsScreenProps {
 }
 
 export default function SettingsScreen({ settings, onUpdateSettings, onNavigate }: SettingsScreenProps) {
-  const { session, user, refreshUserSession } = useAuth();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (session?.user) {
+    if (user?.id) {
       loadUserSettings();
     }
-  }, [session]);
+  }, [user?.id]);
 
   const loadUserSettings = async () => {
-    if (!session?.user) return;
+    if (!user?.id) return;
     
     setIsLoading(true);
     try {
-      const { data, error } = await getGameSettings(session.user.id);
+      const { data, error } = await getGameSettings(user.id);
       if (error) {
         console.log('No saved settings found, using defaults');
         return;
@@ -54,8 +54,8 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
     }
   };
 
-  const saveUserSettings = async (newSettings: Partial<GameSettings>, isRetry: boolean = false) => {
-    if (!session?.user) {
+  const saveUserSettings = async (newSettings: Partial<GameSettings>) => {
+    if (!user?.id) {
       // If user is not logged in, just update local settings
       onUpdateSettings(newSettings);
       return;
@@ -65,8 +65,8 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
     try {
       // Prepare settings for database
       const dbSettings: Omit<Game_Settings, 'id' | 'created_at' | 'updated_at'> = {
-        user_id: session.user.id,
-        player_name: user?.display_name || user?.username || session.user.email || 'Player',
+        user_id: user.id,
+        player_name: user?.display_name || user?.username || user?.email || 'Player',
         control_mode: newSettings.controlMode || settings.controlMode,
         show_grid: newSettings.showGrid !== undefined ? newSettings.showGrid : settings.showGrid,
         sound_enabled: newSettings.soundEnabled !== undefined ? newSettings.soundEnabled : settings.soundEnabled,
@@ -75,31 +75,11 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
 
       const { error } = await saveGameSettings(dbSettings);
       if (error) {
-        // Check if it's an auth error
-        if (error.includes('JWT') || error.includes('expired') || error.includes('401')) {
-          if (!isRetry && retryCount < 2) {
-            setRetryCount(prev => prev + 1);
-            console.log('Auth error detected, refreshing session and retrying...');
-            await refreshUserSession();
-            // Wait a bit and retry
-            setTimeout(() => saveUserSettings(newSettings, true), 1000);
-            return;
-          } else {
-            Alert.alert(
-              'Ошибка аутентификации',
-              'Сессия истекла. Пожалуйста, войдите в систему заново.',
-              [{ text: 'OK', onPress: () => onNavigate('menu') }]
-            );
-            return;
-          }
-        }
-        
         Alert.alert('Ошибка', 'Не удалось сохранить настройки: ' + error);
         return;
       }
 
-      // Success - reset retry count and update local settings
-      setRetryCount(0);
+      // Success - update local settings
       onUpdateSettings(newSettings);
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -128,7 +108,7 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
         )}
       </View>
 
-      {session?.user && (
+      {user && (
         <View style={styles.userInfo}>
           <Text style={styles.userInfoText}>
             Настройки сохраняются в вашем профиле
@@ -259,7 +239,7 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
             </View>
           </View>
 
-          {!session?.user && (
+          {!user && (
             <View style={styles.guestNote}>
               <Icon name="user" size={20} color={ICON_COLORS.accent} style={{ marginBottom: 10 }} />
               <Text style={styles.guestNoteTitle}>Войдите для сохранения настроек</Text>
@@ -284,32 +264,32 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D12', // Глубокий черный
+    backgroundColor: THEME.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: THEME.spacing.lg,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: THEME.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 255, 255, 0.2)', // Тонкая неоновая линия
+    borderBottomColor: 'rgba(0, 255, 255, 0.2)',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5, // Для удобства нажатия
+    paddingVertical: THEME.spacing.sm,
   },
   backButtonText: {
-    color: '#00ffff', // Неоновый голубой
+    color: THEME.colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
     flex: 2,
     textShadowColor: 'rgba(0, 255, 255, 0.5)',
@@ -317,14 +297,14 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   userInfo: {
-    backgroundColor: '#1a1a2e', // Темно-синий
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: THEME.colors.surface,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
     borderBottomWidth: 2,
-    borderBottomColor: '#00e676', // Неоновый зеленый
+    borderBottomColor: THEME.colors.success,
   },
   userInfoText: {
-    color: '#00e676', // Неоновый зеленый
+    color: THEME.colors.success,
     fontSize: 14,
     textAlign: 'center',
   },
@@ -335,35 +315,34 @@ const styles = StyleSheet.create({
     paddingVertical: 50,
   },
   loadingText: {
-    color: '#ffffff',
-    marginTop: 10,
+    color: THEME.colors.text,
+    marginTop: THEME.spacing.md,
     fontSize: 16,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: THEME.spacing.lg,
   },
   section: {
-    marginTop: 30,
+    marginTop: THEME.spacing.xl,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#00ffff',
-    marginBottom: 15,
+    color: THEME.colors.primary,
+    marginBottom: THEME.spacing.lg,
     borderLeftWidth: 4,
-    borderLeftColor: '#00ffff',
-    paddingLeft: 10,
+    borderLeftColor: THEME.colors.primary,
+    paddingLeft: THEME.spacing.md,
     textShadowColor: 'rgba(0, 255, 255, 0.3)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 5,
   },
-  // Базовый стиль для всех опций (стекловидный эффект)
   optionBase: {
     backgroundColor: 'rgba(10, 10, 20, 0.75)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -372,9 +351,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   difficultyOptionSelected: {
-    borderColor: '#00ffff', // Яркая неоновая рамка
-    backgroundColor: 'rgba(0, 255, 255, 0.1)', // Светлый неоновый фон
-    shadowColor: '#00ffff',
+    borderColor: THEME.colors.primary,
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    shadowColor: THEME.colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 5,
@@ -386,15 +365,15 @@ const styles = StyleSheet.create({
   difficultyLabel: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
+    color: THEME.colors.text,
+    marginBottom: THEME.spacing.xs,
   },
   difficultyLabelSelected: {
-    color: '#00ffff', // Неоновый голубой для выбранного
+    color: THEME.colors.primary,
   },
   difficultyDescription: {
     fontSize: 14,
-    color: '#aaaaaa', // Светло-серый
+    color: THEME.colors.disabled,
   },
   toggleOption: {
     flexDirection: 'row',
@@ -402,59 +381,58 @@ const styles = StyleSheet.create({
   },
   toggleContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: THEME.spacing.md,
   },
   toggleLabel: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
+    color: THEME.colors.text,
+    marginBottom: THEME.spacing.xs,
   },
   toggleDescription: {
     fontSize: 14,
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
   },
   guestNote: {
     backgroundColor: 'rgba(10, 10, 20, 0.9)',
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 30,
-    marginBottom: 30,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.lg,
+    marginTop: THEME.spacing.xl,
+    marginBottom: THEME.spacing.xl,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#00e676', // Неоновый зеленый акцент
+    borderColor: THEME.colors.success,
   },
   guestNoteTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#00e676',
+    color: THEME.colors.success,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.md,
     textShadowColor: 'rgba(0, 230, 118, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 5,
   },
   guestNoteText: {
     fontSize: 14,
-    color: '#cccccc',
+    color: THEME.colors.textLight,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   loginButton: {
-    backgroundColor: '#00ffff', // Неоновый голубой
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    // Неоновое свечение для кнопки
-    shadowColor: '#00ffff',
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
+    shadowColor: THEME.colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 10,
     elevation: 5,
   },
   loginButtonText: {
-    color: '#000000', // Черный текст на неоновом фоне
+    color: THEME.colors.background,
     fontSize: 16,
     fontWeight: 'bold',
   },

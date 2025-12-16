@@ -1,366 +1,144 @@
 import 'react-native-url-polyfill/auto';
-
 import { createClient } from '@supabase/supabase-js';
-
-import { User } from '@supabase/supabase-js';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 const supabaseUrl = 'https://igzogtxlmfirwimqnvqa.supabase.co';
-
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlnem9ndHhsbWZpcndpbXFudnFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwMTA3MjcsImV4cCI6MjA3NTU4NjcyN30.xJYaNqbOQTHNCfOg9xjEV3MfQLX3Kd6QYLKd0G3Y7Bc';
 
-
-// Конфигурация для React Native с отключенным realtime
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-
   auth: {
-
     storage: AsyncStorage,
-
     persistSession: true,
-
     autoRefreshToken: true,
-
-    detectSessionInUrl: false
-
+    detectSessionInUrl: false,
   },
-
   realtime: {
-
-    // Минимизируем использование realtime в Expo Go
-
     params: {
-
-      eventsPerSecond: 1
-
-    }
-
-  }
-
+      eventsPerSecond: 1,
+    },
+  },
 });
 
-
-// Типы для таблиц базы данных
-
+// Types
 export interface GameRecord {
-
   id?: string;
-
   user_id?: string;
-
   player_name: string;
-
   score: number;
-
   level: number;
-
   lines_cleared: number;
-
   time_played: number;
-
   created_at?: string;
-
 }
-
 
 export interface PlayerStats {
-
   id?: string;
-
   user_id?: string;
-
   total_games: number;
-
   total_score: number;
-
   best_score: number;
-
   total_lines_cleared: number;
-
   best_level_reached: number;
-
   total_time_played: number;
-
   created_at?: string;
-
   updated_at?: string;
-
 }
-
 
 export interface UserProfile {
-
   id: string;
-
   email: string;
-
   username: string;
-
   display_name: string;
-
-  created_at: string;
-
-  updated_at: string;
-
-}
-
-
-export interface Game_Settings {
-
-  id?: string;
-
-  user_id?: string;
-
-  player_name: string;
-
-  control_mode: string;
-
-  show_grid: boolean;
-
-  sound_enabled: boolean;
-
-  difficulty: string;
-
   created_at?: string;
-
   updated_at?: string;
-
 }
 
-
-export interface AuthState {
-
-  user: UserProfile | null;
-
-  isLoading: boolean;
-
-  error: string | null;
-
+export interface GameSettings {
+  id?: string;
+  user_id?: string;
+  player_name: string;
+  control_mode: string;
+  show_grid: boolean;
+  sound_enabled: boolean;
+  difficulty: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
+// Database functions
 
-// Auth functions
-
-export const signUp = async (email: string, password: string, username: string) => {
-
+export const getPlayerStats = async (userId: string) => {
   try {
+    const { data, error } = await supabase
+      .from('player_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
 
-    const { data, error } = await supabase.auth.signUp({
-
-      email,
-
-      password,
-
-      options: {
-
-        data: {
-
-          username,
-
-          display_name: username,
-
-        }
-
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Not found - create initial stats
+        return createInitialPlayerStats(userId);
       }
-
-    });
-
-
-    if (error) throw error;
-    
-    // Create user profile after successful signup
-    if (data.user) {
-      await createUserProfile(data.user.id, email, username);
-      await createInitialPlayerStats(data.user.id);
+      throw error;
     }
 
     return { data, error: null };
-
-  } catch (error: any) {
-
-    return { data: null, error: error.message };
-
-  }
-
-};
-
-
-export const signIn = async (email: string, password: string) => {
-
-  try {
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-
-      email,
-
-      password
-
-    });
-
-
-    if (error) throw error;
-
-    return { data, error: null };
-
-  } catch (error: any) {
-
-    return { data: null, error: error.message };
-
-  }
-
-};
-
-
-export const signOut = async () => {
-
-  try {
-
-    const { error } = await supabase.auth.signOut();
-
-    if (error) throw error;
-
-    return { error: null };
-
-  } catch (error: any) {
-
-    return { error: error.message };
-
-  }
-
-};
-
-
-export const resetPassword = async (email: string) => {
-
-  try {
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-
-      redirectTo: 'https://igzogtxlmfirwimqnvqa.supabase.co/reset-password',
-
-    });
-
-    if (error) throw error;
-
-    return { error: null };
-
-  } catch (error: any) {
-
-    return { error: error.message };
-
-  }
-
-};
-
-
-export const getCurrentUser = async () => {
-
-  try {
-
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) throw error;
-
-    if (!session) return { data: { user: null }, error: null };
-
-    return { data: { user: session.user }, error: null };
-
-  } catch (error: any) {
-
-    return { data: { user: null }, error: error.message };
-
-  }
-
-};
-
-
-export const refreshSession = async () => {
-  try {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error) throw error;
-    return { data, error: null };
   } catch (error: any) {
     return { data: null, error: error.message };
   }
 };
 
-// Enhanced API call wrapper with retry logic
-export const apiCall = async <T>(apiFunction: () => Promise<{ data: T | null; error: any }>, maxRetries: number = 2): Promise<{ data: T | null; error: any }> => {
-  let lastError: any;
-  
-  // Check if tab is visible before making API calls (only in environments with document)
-  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-    console.log('Tab is hidden, deferring API call...');
-    await new Promise(resolve => {
-      const handleVisibilityChange = () => {
-        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-          if (typeof document !== 'undefined' && document.removeEventListener) {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-          }
-          resolve(void 0);
-        }
-      };
-      if (typeof document !== 'undefined' && document.addEventListener) {
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-      }
-      // Fallback timeout
-      setTimeout(() => {
-        if (typeof document !== 'undefined' && document.removeEventListener) {
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
-        }
-        resolve(void 0);
-      }, 10000);
-    });
+export const getUserRecords = async (userId: string, limit: number = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('records')
+      .select('*')
+      .eq('user_id', userId)
+      .order('score', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
   }
-  
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await apiFunction();
-      
-      // If we get an auth error, try to refresh the session
-      if (result.error && (result.error.message?.includes('JWT') || result.error.message?.includes('expired') || result.error.status === 401)) {
-        if (attempt < maxRetries) {
-          console.log(`Attempt ${attempt + 1}: Auth error detected, refreshing session...`);
-          const refreshResult = await refreshSession();
-          if (refreshResult.error) {
-            lastError = refreshResult.error;
-            continue;
-          }
-          // Wait a bit before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          continue;
+};
+
+export const getUserProfile = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Not found - get from auth user and create
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          return createUserProfile(
+            user.id,
+            user.email || '',
+            user.user_metadata?.username || user.email?.split('@')[0] || 'User'
+          );
         }
       }
-      
-      // Check for network errors
-      if (result.error && (result.error.message?.includes('NetworkError') || result.error.message?.includes('fetch'))) {
-        if (attempt < maxRetries) {
-          console.log(`Attempt ${attempt + 1}: Network error detected, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
-          continue;
-        }
-      }
-      
-      return result;
-    } catch (error) {
-      lastError = error;
-      if (attempt < maxRetries) {
-        console.log(`Attempt ${attempt + 1}: Error occurred, retrying...`, error);
-        // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
-      }
+      throw error;
     }
+
+    return { data, error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
   }
-  
-  return { data: null, error: lastError };
 };
 
-
-// Helper functions
-export const createUserProfile = async (userId: string, email: string, username: string) => {
+export const createUserProfile = async (
+  userId: string,
+  email: string,
+  username: string
+) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -368,11 +146,11 @@ export const createUserProfile = async (userId: string, email: string, username:
         id: userId,
         email,
         username,
-        display_name: username
+        display_name: username,
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return { data, error: null };
   } catch (error: any) {
@@ -388,14 +166,14 @@ export const createInitialPlayerStats = async (userId: string) => {
         user_id: userId,
         total_games: 0,
         total_score: 0,
-        highest_score: 0,
-        total_lines: 0,
-        total_time: 0,
-        level_reached: 1
+        best_score: 0,
+        total_lines_cleared: 0,
+        best_level_reached: 1,
+        total_time_played: 0,
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return { data, error: null };
   } catch (error: any) {
@@ -403,402 +181,148 @@ export const createInitialPlayerStats = async (userId: string) => {
   }
 };
 
-// Database functions
-
-export const getPlayerStats = async (userId: string) => {
-  return apiCall(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('player_stats')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-      
-      if (error && error.code === 'PGRST116') {
-        // Stats not found, create initial stats
-        const { data: newStats } = await createInitialPlayerStats(userId);
-        return { data: newStats, error: null };
-      }
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
-    }
-  });
-};
-
-
-export const getTopRecords = async (limit: number = 10) => {
-  return apiCall(async () => {
-    try {
-      // Step 1: fetch top records
-      const { data: records, error: recordsError } = await supabase
-        .from('records')
-        .select('*')
-        .order('score', { ascending: false })
-        .limit(limit);
-
-      if (recordsError) throw recordsError;
-
-      // If there are no records or none have user_id, return early
-      if (!records || records.length === 0) {
-        return { data: [], error: null };
-      }
-
-      // Collect unique user_ids present in records
-      const userIds = Array.from(new Set(records.filter((r: any) => r.user_id).map((r: any) => r.user_id)));
-
-      let profilesMap: Record<string, any> = {};
-
-      if (userIds.length > 0) {
-        // Step 2: fetch profiles for those user_ids
-        try {
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, username, display_name')
-            .in('id', userIds);
-
-          if (!profilesError && profiles) {
-            profilesMap = profiles.reduce((acc: any, p: any) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
-          } else if (profilesError) {
-            console.warn('Failed to load profiles for top records:', profilesError);
-          }
-        } catch (e: any) {
-          console.warn('Error while fetching profiles for top records, continuing without profiles:', e?.message || e);
-        }
-      }
-
-      // Attach profile (if any) to each record under `profiles` key to keep UI compatibility
-      const enriched = records.map((r: any) => ({
-        ...r,
-        profiles: r.user_id ? profilesMap[r.user_id] || null : null,
-      }));
-
-      return { data: enriched, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
-    }
-  });
-};
-
-
-export const saveGameRecord = async (record: Omit<GameRecord, 'id' | 'created_at'>) => {
-
+export const saveGameRecord = async (
+  record: Omit<GameRecord, 'id' | 'created_at'>
+) => {
   try {
-
     const { data, error } = await supabase
-
       .from('records')
-
       .insert([record])
-
       .select()
-
       .single();
 
-    
-
     if (error) throw error;
-
     return { data, error: null };
-
   } catch (error: any) {
-
     return { data: null, error: error.message };
-
   }
-
 };
 
-
-export const updatePlayerStats = async (userId: string, stats: Partial<PlayerStats>) => {
-
+export const updatePlayerStats = async (
+  userId: string,
+  stats: Partial<PlayerStats>
+) => {
   try {
+    const { data: existing } = await getPlayerStats(userId);
 
-    // First try to get existing stats
-
-    const { data: existingStats } = await getPlayerStats(userId);
-
-    
-
-    if (existingStats) {
-
-      // Update existing stats by adding to current values
-
+    if (existing) {
       const updatedStats = {
-
-        user_id: userId,
-
-        total_games: (existingStats.total_games || 0) + (stats.total_games || 0),
-
-        total_score: (existingStats.total_score || 0) + (stats.total_score || 0),
-
-        best_score: Math.max((existingStats.best_score || 0), (stats.best_score || 0)),
-
-        total_lines_cleared: (existingStats.total_lines_cleared || 0) + (stats.total_lines_cleared || 0),
-
-        best_level_reached: Math.max((existingStats.best_level_reached || 0), (stats.best_level_reached || 0)),
-
-        total_time_played: (existingStats.total_time_played || 0) + (stats.total_time_played || 0),
-
+        total_games: (existing.total_games || 0) + (stats.total_games || 0),
+        total_score: (existing.total_score || 0) + (stats.total_score || 0),
+        best_score: Math.max(existing.best_score || 0, stats.best_score || 0),
+        total_lines_cleared:
+          (existing.total_lines_cleared || 0) + (stats.total_lines_cleared || 0),
+        best_level_reached: Math.max(
+          existing.best_level_reached || 0,
+          stats.best_level_reached || 0
+        ),
+        total_time_played:
+          (existing.total_time_played || 0) + (stats.total_time_played || 0),
         updated_at: new Date().toISOString(),
-
       };
 
-      
-
       const { data, error } = await supabase
-
         .from('player_stats')
-
         .update(updatedStats)
-
         .eq('user_id', userId)
-
         .select()
-
         .single();
 
-      
-
       if (error) throw error;
-
       return { data, error: null };
-
     } else {
-
-      // Create new stats record
-
       const { data, error } = await supabase
-
         .from('player_stats')
-
         .insert([{ user_id: userId, ...stats }])
-
         .select()
-
         .single();
-
-      
-
-      if (error) throw error;
-
-      return { data, error: null };
-
-    }
-
-  } catch (error: any) {
-
-    return { data: null, error: error.message };
-
-  }
-
-};
-
-
-export const getUserProfile = async (userId: string) => {
-  return apiCall(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error && error.code === 'PGRST116') {
-        // Profile not found, try to create it from auth user
-        console.log('Profile not found, attempting to create...');
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && user.id === userId) {
-          const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
-          console.log('Creating profile for user:', user.email, 'with username:', username);
-          
-          const { data: newProfile, error: createError } = await createUserProfile(userId, user.email || '', username);
-          if (createError) {
-            console.error('Failed to create profile:', createError);
-            return { data: null, error: createError };
-          }
-          
-          // Create initial stats
-          const { error: statsError } = await createInitialPlayerStats(userId);
-          if (statsError) {
-            console.error('Failed to create initial stats:', statsError);
-          }
-          
-          return { data: newProfile, error: null };
-        } else {
-          return { data: null, error: 'User not authenticated' };
-        }
-      }
 
       if (error) throw error;
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
     }
-  });
-};
-
-
-export const updateUserProfile = async (userId: string, profile: Partial<UserProfile>) => {
-
-  try {
-
-    const { data, error } = await supabase
-
-      .from('profiles')
-
-      .update(profile)
-
-      .eq('id', userId)
-
-      .select()
-
-      .single();
-
-    
-
-    if (error) throw error;
-
-    return { data, error: null };
-
   } catch (error: any) {
-
     return { data: null, error: error.message };
-
   }
-
 };
-
-
-// Game Settings functions
 
 export const getGameSettings = async (userId: string) => {
-  return apiCall(async () => {
-    try {
-      // Use maybeSingle to be tolerant if multiple rows exist (no unique constraint)
-      const { data, error } = await supabase
-        .from('game_settings')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error) {
-        return { data: null, error: error.message };
-      }
-
-      // data may be null if no settings exist; that's expected
-      return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
-    }
-  });
-};
-
-
-export const saveGameSettings = async (settings: Omit<Game_Settings, 'id' | 'created_at' | 'updated_at'>) => {
-  return apiCall(async () => {
-    try {
-      // First try: upsert with onConflict by user_id (works when a unique index exists)
-      try {
-        const { data, error } = await supabase
-          .from('game_settings')
-          .upsert(settings, { onConflict: 'user_id' })
-          .select()
-          .maybeSingle();
-
-        if (!error) {
-          return { data, error: null };
-        }
-
-        // If we have an error, fallthrough to manual upsert below
-        console.warn('upsert with onConflict failed, will fallback to manual insert/update:', error);
-      } catch (e: any) {
-        // If PostgREST returns 400 Bad Request for on_conflict, we'll fallback
-        console.warn('upsert with onConflict threw, will fallback to manual insert/update:', e?.message || e);
-      }
-
-      // Fallback: check if settings exist for this user_id and then update or insert
-      if (!settings.user_id) {
-        // user_id is required for per-user settings; insert as-is if missing
-        const { data: insertData, error: insertError } = await supabase
-          .from('game_settings')
-          .insert([settings])
-          .select()
-          .maybeSingle();
-
-        if (insertError) throw insertError;
-        return { data: insertData, error: null };
-      }
-
-      const { data: existing, error: getErr } = await supabase
-        .from('game_settings')
-        .select('*')
-        .eq('user_id', settings.user_id)
-        .maybeSingle();
-
-      if (getErr) {
-        // If profiles/table missing or other DB error, propagate
-        throw getErr;
-      }
-
-      if (existing) {
-        const { data: updated, error: updateError } = await supabase
-          .from('game_settings')
-          .update(settings)
-          .eq('user_id', settings.user_id)
-          .select()
-          .maybeSingle();
-
-        if (updateError) throw updateError;
-        return { data: updated, error: null };
-      } else {
-        const { data: inserted, error: insertError } = await supabase
-          .from('game_settings')
-          .insert([settings])
-          .select()
-          .maybeSingle();
-
-        if (insertError) throw insertError;
-        return { data: inserted, error: null };
-      }
-    } catch (error: any) {
-      return { data: null, error: error.message };
-    }
-  });
-};
-
-
-export const getUserRecords = async (userId: string, limit: number = 10) => {
-
   try {
-
     const { data, error } = await supabase
-
-      .from('records')
-
+      .from('game_settings')
       .select('*')
-
       .eq('user_id', userId)
-
-      .order('score', { ascending: false })
-
-      .limit(limit);
-
-    
+      .maybeSingle();
 
     if (error) throw error;
-
     return { data, error: null };
-
   } catch (error: any) {
-
     return { data: null, error: error.message };
-
   }
+};
 
+export const saveGameSettings = async (
+  settings: Omit<GameSettings, 'id' | 'created_at' | 'updated_at'>
+) => {
+  try {
+    if (!settings.user_id) {
+      throw new Error('user_id is required');
+    }
+
+    const { data: existing } = await getGameSettings(settings.user_id);
+
+    if (existing) {
+      // Only send fields that exist in the table
+      const updateData = {
+        control_mode: settings.control_mode,
+        show_grid: settings.show_grid,
+        sound_enabled: settings.sound_enabled,
+        difficulty: settings.difficulty,
+      };
+
+      const { data, error } = await supabase
+        .from('game_settings')
+        .update(updateData)
+        .eq('user_id', settings.user_id)
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      return { data, error: null };
+    } else {
+      const insertData = {
+        user_id: settings.user_id,
+        player_name: settings.player_name,
+        control_mode: settings.control_mode,
+        show_grid: settings.show_grid,
+        sound_enabled: settings.sound_enabled,
+        difficulty: settings.difficulty,
+      };
+
+      const { data, error } = await supabase
+        .from('game_settings')
+        .insert([insertData])
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      return { data, error: null };
+    }
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
+};
+
+export const getTopRecords = async (limit: number = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('records')
+      .select('*')
+      .order('score', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return { data: data || [], error: null };
+  } catch (error: any) {
+    return { data: null, error: error.message };
+  }
 };

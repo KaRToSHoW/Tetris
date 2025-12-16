@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { THEME } from '../../styles/theme';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -23,21 +24,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signIn, isLoading, error, clearError } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { signIn, isLoading } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
+      setError('Пожалуйста, заполните все поля');
       return;
     }
 
-    clearError();
+    setError(null);
     const result = await signIn(email, password);
     
     if (result.success) {
       onNavigateToGame();
     } else {
-      Alert.alert('Ошибка входа', result.error || 'Неизвестная ошибка');
+      setError(result.error || 'Ошибка входа');
     }
   };
 
@@ -120,7 +122,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: THEME.colors.surface,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -129,48 +131,48 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 20,
+    paddingHorizontal: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.lg,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.md,
   },
   subtitle: {
     fontSize: 16,
-    color: '#cccccc',
+    color: THEME.colors.textLight,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: THEME.spacing.xl,
   },
   form: {
     width: '100%',
   },
   input: {
-    backgroundColor: '#2a2a4a',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    backgroundColor: THEME.colors.background,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
     fontSize: 16,
-    color: '#ffffff',
+    color: THEME.colors.text,
     borderWidth: 1,
-    borderColor: '#3a3a5a',
+    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   button: {
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.lg,
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: THEME.spacing.md,
   },
   loginButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: THEME.colors.success,
   },
   guestButton: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#4CAF50',
+    borderColor: THEME.colors.success,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -178,28 +180,28 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
   },
   guestButtonText: {
-    color: '#4CAF50',
+    color: THEME.colors.success,
   },
   linkButton: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   linkText: {
-    color: '#4CAF50',
+    color: THEME.colors.success,
     fontSize: 16,
     textDecorationLine: 'underline',
   },
   errorContainer: {
-    backgroundColor: '#ff4444',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
+    backgroundColor: THEME.colors.error,
+    borderRadius: THEME.borderRadius.md,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
   },
   errorText: {
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
     fontSize: 14,
   },

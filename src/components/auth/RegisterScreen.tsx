@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { THEME } from '../../styles/theme';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -25,45 +26,41 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { signUp, isLoading, error, clearError } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { signUp, isLoading } = useAuth();
 
   const handleRegister = async () => {
     if (!email || !username || !password || !confirmPassword) {
-      Alert.alert('Ошибка', 'Пожалуйста, заполните все поля');
+      setError('Пожалуйста, заполните все поля');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Ошибка', 'Пароли не совпадают');
+      setError('Пароли не совпадают');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Ошибка', 'Пароль должен содержать минимум 6 символов');
+      setError('Пароль должен содержать минимум 6 символов');
       return;
     }
 
     if (username.length < 3) {
-      Alert.alert('Ошибка', 'Имя пользователя должно содержать минимум 3 символа');
+      setError('Имя пользователя должно содержать минимум 3 символа');
       return;
     }
 
-    clearError();
+    setError(null);
     const result = await signUp(email, password, username);
     
     if (result.success) {
-      if (result.error) {
-        // Это сообщение о подтверждении email
-        Alert.alert('Регистрация успешна!', result.error);
-      } else {
-        Alert.alert(
-          'Регистрация успешна!', 
-          'Добро пожаловать в Tetris!',
-          [{ text: 'OK', onPress: onNavigateToGame }]
-        );
-      }
+      Alert.alert(
+        'Регистрация успешна!', 
+        'Проверьте почту для подтверждения, затем войдите в аккаунт',
+        [{ text: 'OK', onPress: onNavigateToLogin }]
+      );
     } else {
-      Alert.alert('Ошибка регистрации', result.error || 'Неизвестная ошибка');
+      setError(result.error || 'Ошибка регистрации');
     }
   };
 
@@ -166,7 +163,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: THEME.colors.surface,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -175,48 +172,48 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 20,
+    paddingHorizontal: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.lg,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.md,
   },
   subtitle: {
     fontSize: 16,
-    color: '#cccccc',
+    color: THEME.colors.textLight,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: THEME.spacing.xl,
   },
   form: {
     width: '100%',
   },
   input: {
-    backgroundColor: '#2a2a4a',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    backgroundColor: THEME.colors.background,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
     fontSize: 16,
-    color: '#ffffff',
+    color: THEME.colors.text,
     borderWidth: 1,
-    borderColor: '#3a3a5a',
+    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   button: {
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.lg,
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: THEME.spacing.md,
   },
   registerButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: THEME.colors.info,
   },
   guestButton: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#4CAF50',
+    borderColor: THEME.colors.success,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -224,28 +221,28 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
   },
   guestButtonText: {
-    color: '#4CAF50',
+    color: THEME.colors.success,
   },
   linkButton: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: THEME.spacing.lg,
   },
   linkText: {
-    color: '#2196F3',
+    color: THEME.colors.info,
     fontSize: 16,
     textDecorationLine: 'underline',
   },
   errorContainer: {
-    backgroundColor: '#ff4444',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
+    backgroundColor: THEME.colors.error,
+    borderRadius: THEME.borderRadius.md,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
   },
   errorText: {
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
     fontSize: 14,
   },

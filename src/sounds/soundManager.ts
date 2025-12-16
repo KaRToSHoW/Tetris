@@ -47,7 +47,7 @@ async function loadSound(key: string) {
 export async function playSound(key: keyof typeof sounds) {
   if (!isInitialized) await initSounds();
 
-  if (!sounds[key]) await loadSound(key as string);
+  if (!sounds[key]) await loadSound(key);
   const sound = sounds[key];
   if (!sound) return;
 
@@ -57,7 +57,7 @@ export async function playSound(key: keyof typeof sounds) {
 export async function playMusic(key: 'menu' | 'game_theme') {
   if (!isInitialized) await initSounds();
 
-  if (!sounds[key]) await loadSound(key as string);
+  if (!sounds[key]) await loadSound(key);
   const sound = sounds[key];
   if (!sound) return;
 

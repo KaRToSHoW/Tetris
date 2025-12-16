@@ -12,6 +12,7 @@ import {
 import Icon, { ICON_COLORS } from './Icon';
 import { useAuth } from '../contexts/AuthContext';
 import { getTopRecords, getUserRecords, GameRecord } from '../lib/supabase';
+import { THEME } from '../styles/theme';
 import type { HighScore, Screen } from '../types/app';
 
 interface RecordsScreenProps {
@@ -28,23 +29,22 @@ interface ExtendedGameRecord extends GameRecord {
 }
 
 export default function RecordsScreen({ records, onNavigate, onResetRecords }: RecordsScreenProps) {
-  const { session, refreshUserSession } = useAuth();
+  const { user } = useAuth();
   const [globalRecords, setGlobalRecords] = useState<ExtendedGameRecord[]>([]);
   const [userRecords, setUserRecords] = useState<GameRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showGlobal, setShowGlobal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    if (session?.user) {
+    if (user?.id) {
       loadRecords();
     }
-  }, [session, showGlobal]);
+  }, [user?.id, showGlobal]);
 
-  const loadRecords = async (isRetry: boolean = false) => {
-    if (!session?.user) return;
+  const loadRecords = async () => {
+    if (!user?.id) return;
     
     setIsLoading(true);
     setError(null);
@@ -53,21 +53,7 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
       if (showGlobal) {
         result = await getTopRecords(50);
       } else {
-        result = await getUserRecords(session.user.id, 20);
-      }
-
-      // Check for auth errors
-      if (result.error && (result.error.includes('JWT') || result.error.includes('expired') || result.error.includes('401'))) {
-        if (!isRetry && retryCount < 2) {
-          setRetryCount(prev => prev + 1);
-          console.log('Auth error detected, refreshing session and retrying...');
-          await refreshUserSession();
-          setTimeout(() => loadRecords(true), 1000);
-          return;
-        } else {
-          setError('Сессия истекла. Пожалуйста, войдите заново.');
-          return;
-        }
+        result = await getUserRecords(user.id, 20);
       }
 
       if (result.error) {
@@ -81,9 +67,6 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
       } else {
         setUserRecords(result.data || []);
       }
-      
-      // Success - reset retry count
-      setRetryCount(0);
     } catch (error) {
       console.error('Error loading records:', error);
       setError('Не удалось загрузить рекорды');
@@ -94,7 +77,6 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    setRetryCount(0); // Reset retry count on manual refresh
     await loadRecords();
     setIsRefreshing(false);
   };
@@ -302,7 +284,7 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
             index === 0 && styles.firstPlace,
             index === 1 && styles.secondPlace,
             index === 2 && styles.thirdPlace,
-            record.user_id === session?.user?.id && styles.userRecord,
+            record.user_id === user?.id && styles.userRecord,
           ]}>
             <View style={styles.rankContainer}>
               {index === 0 ? (
@@ -319,7 +301,7 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
               <Text style={styles.recordPlayer} numberOfLines={1}>
                 {getPlayerName(record)}
               </Text>
-              {record.user_id === session?.user?.id && (
+              {record.user_id === user?.id && (
                 <Text style={styles.youLabel}>ВЫ</Text>
               )}
             </View>
@@ -343,14 +325,14 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
           <Text style={styles.backButtonText}>Назад</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Рекорды</Text>
-        {records.length > 0 && !showGlobal && !session?.user && (
+        {records.length > 0 && !showGlobal && !user && (
           <TouchableOpacity style={styles.resetButton} onPress={onResetRecords}>
             <Text style={styles.resetButtonText}>Очистить</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {session?.user ? (
+      {user ? (
         <View style={styles.tabContainer}>
           <TouchableOpacity 
             style={[styles.tab, !showGlobal && styles.activeTab]}
@@ -381,7 +363,7 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         refreshControl={
-          session?.user ? (
+          user ? (
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
@@ -391,7 +373,7 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
           ) : undefined
         }
       >
-        {!session?.user ? (
+        {!user ? (
           <>
             {renderLocalRecords()}
             <View style={styles.guestMessage}>
@@ -426,16 +408,15 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D12', // Более глубокий черный
+    backgroundColor: THEME.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60, // Оставляем для SafeArea
-    paddingBottom: 15, // Чуть меньше
-    // Неоновая линия-разделитель
+    paddingHorizontal: THEME.spacing.lg,
+    paddingTop: 60,
+    paddingBottom: THEME.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 255, 255, 0.2)', 
   },
@@ -445,17 +426,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    color: '#00ffff', // Неоновый голубой
+    color: THEME.colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   title: {
     flex: 2,
-    fontSize: 28, // Крупнее
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#00ffff', // Неоновый голубой
+    color: THEME.colors.primary,
     textAlign: 'center',
-    // Свечение
     textShadowColor: 'rgba(0, 255, 255, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
@@ -465,42 +445,41 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   resetButtonText: {
-    color: '#ff4174', // Неоновый красный/розовый
+    color: THEME.colors.error,
     fontSize: 14,
     fontWeight: '600',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(10, 10, 20, 0.9)', // Темный полупрозрачный
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 10,
-    padding: 4,
+    backgroundColor: 'rgba(10, 10, 20, 0.9)',
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.lg,
+    padding: THEME.spacing.xs,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: THEME.spacing.md,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: THEME.borderRadius.md,
   },
   activeTab: {
-    backgroundColor: '#00ffff', // Активный таб
+    backgroundColor: THEME.colors.primary,
   },
   tabText: {
-    color: '#aaaaaa', // Светло-серый
+    color: THEME.colors.disabled,
     fontSize: 16,
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#000000', // Черный для контраста
+    color: THEME.colors.background,
   },
   guestInfo: {
-    // Убрал фон, просто текст
-    paddingHorizontal: 20,
-    paddingBottom: 20, // Отступ снизу
+    paddingHorizontal: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.lg,
   },
   guestInfoText: {
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     fontSize: 14,
     textAlign: 'center',
   },
@@ -508,72 +487,72 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   guestMessage: {
-    padding: 30,
+    padding: THEME.spacing.xl,
     alignItems: 'center',
-    backgroundColor: 'rgba(10, 10, 20, 0.75)', // Эффект стекла
-    margin: 20,
-    borderRadius: 12,
+    backgroundColor: 'rgba(10, 10, 20, 0.75)',
+    margin: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)', // Неоновая рамка
+    borderColor: 'rgba(0, 255, 255, 0.3)',
   },
   guestTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.md,
   },
   guestDescription: {
     fontSize: 16,
-    color: '#aaaaaa', // Светлее
+    color: THEME.colors.disabled,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 20,
+    marginBottom: THEME.spacing.lg,
   },
   loginButton: {
-    backgroundColor: '#00ffff', // Основной акцентный цвет
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
   },
   loginButtonText: {
-    color: '#000000', // Черный для контраста
+    color: THEME.colors.background,
     fontSize: 16,
     fontWeight: 'bold',
   },
   loadingContainer: {
-    padding: 40,
+    padding: THEME.spacing.xl,
     alignItems: 'center',
   },
   loadingText: {
-    color: '#aaaaaa',
-    marginTop: 10,
+    color: THEME.colors.disabled,
+    marginTop: THEME.spacing.md,
     fontSize: 16,
   },
   errorContainer: {
-    padding: 30,
+    padding: THEME.spacing.xl,
     alignItems: 'center',
-    backgroundColor: 'rgba(20, 10, 10, 0.75)', // Стекло с красным оттенком
-    margin: 20,
-    borderRadius: 12,
+    backgroundColor: 'rgba(20, 10, 10, 0.75)',
+    margin: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#ff4174', // Неоновая красная рамка
+    borderColor: THEME.colors.error,
   },
   errorText: {
     fontSize: 16,
-    color: '#ff4174', // Неоновый красный
+    color: THEME.colors.error,
     textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
+    marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
   },
   retryButton: {
-    backgroundColor: '#ff9800', // Яркий "аркадный" оранжевый
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.warning,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
   },
   retryButtonText: {
-    color: '#000000',
+    color: THEME.colors.background,
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -581,125 +560,125 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: THEME.spacing.xl,
     paddingVertical: 80,
   },
   emptyTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: THEME.spacing.md,
   },
   emptyDescription: {
     fontSize: 16,
-    color: '#aaaaaa', // Светлее
+    color: THEME.colors.disabled,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 30,
+    marginBottom: THEME.spacing.xl,
   },
   playButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00ffff', // Основной цвет
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.md,
   },
   playButtonText: {
-    color: '#000000', // Черный
+    color: THEME.colors.background,
     fontSize: 16,
     fontWeight: 'bold',
   },
   recordsList: {
-    paddingHorizontal: 15, // Чуть меньше
-    paddingBottom: 20,
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: THEME.spacing.lg,
   },
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(10, 10, 20, 0.9)', // Темная "стеклянная" шапка
-    borderRadius: 8,
-    marginBottom: 10,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: 'rgba(10, 10, 20, 0.9)',
+    borderRadius: THEME.borderRadius.md,
+    marginBottom: THEME.spacing.md,
   },
   headerRank: {
     width: 40,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa', // Светлее
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   headerPlayer: {
     flex: 1.5,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     textAlign: 'left',
-    marginRight: 10,
+    marginRight: THEME.spacing.md,
   },
   headerScore: {
     width: 80,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   headerLines: {
     width: 50,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   headerLevel: {
     width: 40,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   headerTime: {
     width: 60,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   headerDate: {
     width: 80,
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#aaaaaa',
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   recordItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(15, 15, 25, 0.7)', // Стеклянный элемент
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: 'rgba(15, 15, 25, 0.7)',
+    borderRadius: THEME.borderRadius.md,
+    marginBottom: THEME.spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: 'rgba(0, 255, 255, 0.4)', // Рамка по умолчанию
+    borderLeftColor: 'rgba(0, 255, 255, 0.4)',
   },
   firstPlace: {
     borderLeftColor: '#FFD700',
-    backgroundColor: 'rgba(255, 215, 0, 0.1)', // Золотое свечение
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
   },
   secondPlace: {
     borderLeftColor: '#C0C0C0',
-    backgroundColor: 'rgba(192, 192, 192, 0.1)', // Серебряное свечение
+    backgroundColor: 'rgba(192, 192, 192, 0.1)',
   },
   thirdPlace: {
     borderLeftColor: '#CD7F32',
-    backgroundColor: 'rgba(205, 127, 50, 0.1)', // Бронзовое свечение
+    backgroundColor: 'rgba(205, 127, 50, 0.1)',
   },
   userRecord: {
-    borderLeftColor: '#00e676', // Неоновый зеленый
-    backgroundColor: 'rgba(0, 230, 118, 0.1)', // Зеленое свечение
+    borderLeftColor: THEME.colors.success,
+    backgroundColor: 'rgba(0, 230, 118, 0.1)',
   },
   rankContainer: {
     width: 40,
@@ -708,52 +687,52 @@ const styles = StyleSheet.create({
   recordRank: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#aaaaaa', // Светлее
+    color: THEME.colors.disabled,
   },
   playerContainer: {
     flex: 1.5,
-    marginRight: 10,
+    marginRight: THEME.spacing.md,
   },
   recordPlayer: {
     fontSize: 14,
-    color: '#ffffff',
+    color: THEME.colors.text,
     fontWeight: '600',
   },
   youLabel: {
     fontSize: 10,
-    color: '#00e676', // Неоновый зеленый
+    color: THEME.colors.success,
     fontWeight: 'bold',
-    marginTop: 2,
+    marginTop: THEME.spacing.xs,
   },
   recordScore: {
     width: 80,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#00ffff', // Акцент на очках
+    color: THEME.colors.primary,
     textAlign: 'center',
   },
   recordLines: {
     width: 50,
     fontSize: 14,
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
   },
   recordLevel: {
     width: 40,
     fontSize: 14,
-    color: '#ffffff',
+    color: THEME.colors.text,
     textAlign: 'center',
   },
   recordTime: {
     width: 60,
     fontSize: 12,
-    color: '#aaaaaa', // Светлее
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
   recordDate: {
     width: 80,
     fontSize: 12,
-    color: '#aaaaaa', // Светлее
+    color: THEME.colors.disabled,
     textAlign: 'center',
   },
 });
