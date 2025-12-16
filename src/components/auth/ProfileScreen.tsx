@@ -14,6 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../Icon';
 import { supabase } from '../../lib/supabase';
 import { THEME } from '../../styles/theme';
+import VideoBackground from '../VideoBackground';
 
 interface PlayerStats {
   total_games: number;
@@ -176,7 +177,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   // Экран для гостя
   if (!user) {
     return (
-      <View style={styles.container}>
+      <VideoBackground>
+        <View style={styles.container}>
         <View style={styles.guestContainer}>
           <Text style={styles.title}>Профиль гостя</Text>
           <Text style={styles.guestText}>
@@ -192,21 +194,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </TouchableOpacity>
         </View>
       </View>
+      </VideoBackground>
     );
   }
 
   if (authLoading || isLoading) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <VideoBackground>
+        <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={THEME.colors.success} />
         <Text style={styles.loadingText}>Загрузка профиля...</Text>
       </View>
+      </VideoBackground>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <VideoBackground>
+        <View style={[styles.container, styles.centered]}>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={[styles.button, styles.retryButton]} onPress={() => loadProfileData()}>
           <Text style={styles.buttonText}>Повторить</Text>
@@ -215,11 +221,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Text style={styles.buttonText}>Назад к игре</Text>
         </TouchableOpacity>
       </View>
+      </VideoBackground>
     );
   }
 
   return (
-    <ScrollView 
+    <VideoBackground>
+      <ScrollView 
       style={styles.container}
       refreshControl={
         <RefreshControl
@@ -362,6 +370,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
       </View>
     </ScrollView>
+    </VideoBackground>
   );
 };
 

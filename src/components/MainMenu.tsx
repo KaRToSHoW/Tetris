@@ -4,6 +4,7 @@ import Icon, { ICON_COLORS } from './Icon';
 import { useAuth } from '../contexts/AuthContext';
 import { THEME } from '../styles/theme';
 import type { Screen } from '../types/app';
+import VideoBackground from './VideoBackground';
 
 interface MainMenuProps {
   onNavigate: (screen: Screen) => void;
@@ -77,7 +78,8 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <VideoBackground>
+      <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>ТЕТРИС</Text>
         <Text style={styles.subtitle}>Классическая игра</Text>
@@ -129,13 +131,13 @@ export default function MainMenu({ onNavigate }: MainMenuProps) {
         <Text style={styles.versionText}>v1.0.0</Text>
       </View>
     </View>
+    </VideoBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
     justifyContent: 'center',
     paddingHorizontal: THEME.spacing.lg,
   },

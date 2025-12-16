@@ -6,6 +6,7 @@ import Icon, { ICON_COLORS } from './Icon';
 import TouchGameBoard from './TouchGameBoard';
 import { THEME } from '../styles/theme';
 import type { GameSettings, Screen } from '../types/app';
+import VideoBackground from './VideoBackground';
 
 interface GameScreenProps {
   settings: GameSettings;
@@ -113,7 +114,8 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
   }, [state.next]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <VideoBackground>
+      <SafeAreaView style={styles.container}>
       {/* Header with Menu Button */}
       <View style={styles.header}>
         <Pressable 
@@ -383,6 +385,7 @@ export default function GameScreen({ settings, onNavigate, onGameOver }: GameScr
         </View>
       )}
     </SafeAreaView>
+    </VideoBackground>
   );
 }
 
@@ -390,8 +393,7 @@ const CELL = 16;
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1, 
-    backgroundColor: THEME.colors.background, 
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getGameSettings, saveGameSettings, Game_Settings } from '../lib/supabase';
 import { THEME } from '../styles/theme';
 import type { GameSettings, Screen } from '../types/app';
+import VideoBackground from './VideoBackground';
 
 interface SettingsScreenProps {
   settings: GameSettings;
@@ -96,7 +97,8 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
   ] as const;
 
   return (
-    <View style={styles.container}>
+    <VideoBackground>
+      <View style={styles.container}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => onNavigate('menu')}>
           <Icon name="back" size={16} color={ICON_COLORS.primary} style={{ marginRight: 8 }} />
@@ -258,13 +260,13 @@ export default function SettingsScreen({ settings, onUpdateSettings, onNavigate 
         </ScrollView>
       )}
     </View>
+    </VideoBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   header: {
     flexDirection: 'row',

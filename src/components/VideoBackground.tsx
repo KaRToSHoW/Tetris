@@ -1,6 +1,6 @@
 // -*- coding: utf-8 -*-
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Dimensions, ActivityIndicator, Platform } from 'react-native';
 // Предполагается, что 'expo-video' и 'expo-blur' установлены.
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { BlurView } from 'expo-blur';
@@ -22,53 +22,67 @@ export default function VideoBackground({
   const [hasVideoError, setHasVideoError] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Создаем video player с настройками
-  const player = useVideoPlayer(
+  // Создаем video player с настройками (только для нативной платформы)
+  const player = Platform.OS !== 'web' ? useVideoPlayer(
     videoSource || require('../../assets/videos/tetris-bg.mp4'),
     (player) => {
       player.loop = true;
       player.muted = true;
       player.volume = 0;
-      // Воспроизводим сразу, как только компонент смонтирован
       player.play(); 
     }
-  );
+  ) : null;
 
+  // Web-specific video setup
   useEffect(() => {
-    // 1. Таймер для автоматического переключения на резервный фон (fallback)
-    const fallbackTimer = setTimeout(() => {
-      if (!isVideoReady) {
-        console.warn('Video loading timeout, switching to gradient background');
-        setHasVideoError(true);
-        setIsLoading(false);
-      }
-    }, 5000); // 5 секунд на загрузку
-
-    // 2. Слушаем изменения статуса видеоплеера
-    const subscription = player.addListener('statusChange', ({ status, error }) => {
-      console.log('Video status:', status);
-      
-      if (status === 'error') {
-        console.error('Video player error:', error);
-        setHasVideoError(true);
-        setIsLoading(false);
-        clearTimeout(fallbackTimer);
-      } else if (status === 'readyToPlay') {
-        console.log('Video ready to play');
+    if (Platform.OS === 'web') {
+      const timer = setTimeout(() => {
+        console.log('Web video: setting ready state after delay');
         setIsVideoReady(true);
         setIsLoading(false);
-        clearTimeout(fallbackTimer);
-        // player.play() вызывается при создании плеера, здесь можно не дублировать
-      } else if (status === 'loading') {
-        setIsLoading(true);
-      }
-    });
+      }, 500);
 
-    return () => {
-      subscription.remove();
-      clearTimeout(fallbackTimer);
-    };
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' && player) {
+      // 1. Таймер для автоматического переключения на резервный фон (fallback)
+      const fallbackTimer = setTimeout(() => {
+        if (!isVideoReady) {
+          console.warn('Video loading timeout, switching to gradient background');
+          setHasVideoError(true);
+          setIsLoading(false);
+        }
+      }, 5000); // 5 секунд на загрузку
+
+      // 2. Слушаем изменения статуса видеоплеера
+      const subscription = player.addListener('statusChange', ({ status, error }) => {
+        console.log('Video status:', status);
+        
+        if (status === 'error') {
+          console.error('Video player error:', error);
+          setHasVideoError(true);
+          setIsLoading(false);
+          clearTimeout(fallbackTimer);
+        } else if (status === 'readyToPlay') {
+          console.log('Video ready to play');
+          setIsVideoReady(true);
+          setIsLoading(false);
+          clearTimeout(fallbackTimer);
+        } else if (status === 'loading') {
+          setIsLoading(true);
+        }
+      });
+
+      return () => {
+        subscription.remove();
+        clearTimeout(fallbackTimer);
+      };
+    }
   }, [player, isVideoReady]);
 
   // Если есть ошибка загрузки видео, используем анимированный градиент и возвращаем контент
@@ -95,20 +109,59 @@ export default function VideoBackground({
         </View>
       )}
       
-      {/* 2. ВИДЕО — показываем всегда, но делаем видимым только когда готово (opacity) */}
-      <VideoView
-        player={player}
-        style={[
-          styles.video,
-          // Плавное появление видео при готовности
-          { opacity: isVideoReady && !isLoading ? 1 : 0 }
-        ]}
-        contentFit="cover"
-        nativeControls={false}
-        // ИСПРАВЛЕНИЕ: Замена deprecated allowsFullscreen на fullscreenOptions
-        fullscreenOptions={{ preventAutomaticFullscreen: true }}
-        allowsPictureInPicture={false}
-      />
+      {/* 2. ВИДЕО */}
+      {Platform.OS === 'web' ? (
+        // Web version with HTML5 video
+        <View 
+          style={[
+            styles.video,
+            { opacity: isVideoReady && !isLoading ? 1 : 0 }
+          ]}
+        >
+          {/* @ts-ignore */}
+          <video
+            ref={videoRef}
+            src={require('../../assets/videos/tetris-bg.mp4')}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+            onLoadedData={() => {
+              console.log('Web video loaded successfully');
+              setIsVideoReady(true);
+              setIsLoading(false);
+            }}
+            onError={(e) => {
+              console.error('Web video error:', e);
+              setHasVideoError(true);
+              setIsLoading(false);
+            }}
+          />
+        </View>
+      ) : (
+        // Native version with expo-video
+        player && (
+          <VideoView
+            player={player}
+            style={[
+              styles.video,
+              { opacity: isVideoReady && !isLoading ? 1 : 0 }
+            ]}
+            contentFit="cover"
+            nativeControls={false}
+            fullscreenOptions={{ preventAutomaticFullscreen: true }}
+            allowsPictureInPicture={false}
+          />
+        )
+      )}
       
       {/* 3. СЛОЙ БЛЮРА — только поверх видео */}
       {isVideoReady && !isLoading && (

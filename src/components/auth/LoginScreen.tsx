@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { THEME } from '../../styles/theme';
+import VideoBackground from '../VideoBackground';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -48,7 +49,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView 
+    <VideoBackground>
+      <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -116,13 +118,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </VideoBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.surface,
   },
   scrollContainer: {
     flexGrow: 1,

@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getTopRecords, getUserRecords, GameRecord } from '../lib/supabase';
 import { THEME } from '../styles/theme';
 import type { HighScore, Screen } from '../types/app';
+import VideoBackground from './VideoBackground';
 
 interface RecordsScreenProps {
   records: HighScore[];
@@ -318,7 +319,8 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
   };
 
   return (
-    <View style={styles.container}>
+    <VideoBackground>
+      <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => onNavigate('menu')}>
           <Icon name="back" size={16} color={ICON_COLORS.primary} style={{ marginRight: 8 }} />
@@ -403,12 +405,12 @@ export default function RecordsScreen({ records, onNavigate, onResetRecords }: R
         )}
       </ScrollView>
     </View>
+    </VideoBackground>
   );
 }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
   },
   header: {
     flexDirection: 'row',
